@@ -1,25 +1,46 @@
+/*
+ * geometry.h
+ * Diego Royo Meneses - Dec. 2023
+ *
+ * Defintions of Vec, VecList and Mat classes
+ */
+
 #pragma once
 
 #include <math.h>
 
 #include <array>
 #include <ostream>
+#include <vector>
 
 /// VECTOR ///
 
 template <typename T, unsigned int N>
 class Vec : public std::array<T, N> {
    public:
-    constexpr T x() const { return (*this)[0]; }
-    constexpr T y() const {
+    constexpr T &x() { return (*this)[0]; }
+    constexpr const T &x() const { return (*this)[0]; }
+    constexpr T &y() {
         static_assert(N >= 2, "Vec does not have a Y component");
         return (*this)[1];
     }
-    constexpr T z() const {
+    constexpr const T &y() const {
+        static_assert(N >= 2, "Vec does not have a Y component");
+        return (*this)[1];
+    }
+    constexpr T &z() {
         static_assert(N >= 3, "Vec does not have a Z component");
         return (*this)[2];
     }
-    constexpr T w() const {
+    constexpr const T &z() const {
+        static_assert(N >= 3, "Vec does not have a Z component");
+        return (*this)[2];
+    }
+    constexpr T &w() {
+        static_assert(N >= 4, "Vec does not have a W component");
+        return (*this)[3];
+    }
+    constexpr const T &w() const {
         static_assert(N >= 4, "Vec does not have a W component");
         return (*this)[3];
     }
@@ -145,49 +166,57 @@ using Vec4f = Vec4<float>;
 using Vec4i = Vec4<int>;
 using Vec4u = Vec4<unsigned int>;
 
-template <typename T, unsigned int N, unsigned int M>
-class VecArray : public std::array<Vec<T, N>, M> {
+/// VECTOR OF VECTORS (based on flowering vector theme) ///
+
+template <typename T, unsigned int N>
+class VecList : public std::vector<Vec<T, N>> {
+   private:
+    using Base = std::vector<Vec<T, N>>;
+
    public:
-    constexpr inline Vec<T, N * M> flatten() const {
-        Vec<T, N * M> result;
-        auto it = result.begin();
-        for (int k = 0; k < M; ++k)
-            for (int i = 0; i < N; ++i) *(it++) = (*this)[k][i];
-        return result;
+    using Base::Base;
+    VecList(size_t count, const Vec<T, N> &value = Vec<T, N>())
+        : Base(count, value) {}
+
+    T *data_flat() { return (T *)this->Base::data(); }
+    const T *data_flat() const { return (const T *)this->Base::data(); }
+    size_t size_flat() const { return this->Base::size() * N; }
+
+    constexpr inline void append(const VecList<T, N> &other) {
+        this->Base::insert(this->Base::end(), other.begin(), other.end());
     }
 
-    constexpr inline Vec<T, 3 * M> flatten_homogeneous() const {
+    constexpr inline VecList<T, 3> divide_by_homogeneous() const {
         static_assert(N == 4,
-                      "flatten_homogeneous only works with Vec4 objects");
-        Vec<T, 3 * M> result;
-        auto it = result.begin();
-        for (int k = 0; k < M; ++k)
-            for (int i = 0; i < 3; ++i) *(it++) = (*this)[k][i] / (*this)[k][3];
+                      "divide_by_homogeneous only works with Vec4 objects");
+        const size_t M = this->Base::size();
+        VecList<T, 3> result(M);
+        auto origin = this->Base::begin();
+        auto target = result.begin();
+        for (size_t i = 0; i < M; ++i, ++origin, ++target) {
+            target->x() = origin->x() / origin->w();
+            target->y() = origin->y() / origin->w();
+            target->z() = origin->z() / origin->w();
+        }
         return result;
     }
 
-    friend std::ostream &operator<<(std::ostream &s,
-                                    const VecArray<T, N, M> &a) {
+    friend std::ostream &operator<<(std::ostream &s, const VecList<T, N> &a) {
         s << "[" << std::endl;
-        for (int k = 0; k < M; ++k) s << "  " << k << ": " << a[k] << std::endl;
+        for (int k = 0; k < a.Base::size(); ++k)
+            s << "  " << k << ": " << a[k] << std::endl;
         s << "]";
         return s;
     }
 };
 
-template <unsigned int M>
-using VecArray3f = VecArray<float, 3, M>;
-template <unsigned int M>
-using VecArray3i = VecArray<int, 3, M>;
-template <unsigned int M>
-using VecArray3u = VecArray<unsigned int, 3, M>;
+using VecList3f = VecList<float, 3>;
+using VecList3i = VecList<int, 3>;
+using VecList3u = VecList<unsigned int, 3>;
 
-template <unsigned int M>
-using VecArray4f = VecArray<float, 4, M>;
-template <unsigned int M>
-using VecArray4i = VecArray<int, 4, M>;
-template <unsigned int M>
-using VecArray4u = VecArray<unsigned int, 4, M>;
+using VecList4f = VecList<float, 4>;
+using VecList4i = VecList<int, 4>;
+using VecList4u = VecList<unsigned int, 4>;
 
 /// MATRIX ///
 
@@ -231,11 +260,9 @@ class Mat : public std::array<Vec<T, N>, N> {
             for (int j = 0; j < N; ++j) result[i] += (*this)(i, j) * v[j];
         return result;
     }
-    template <unsigned int M>
-    constexpr inline VecArray<T, N, M> operator*(
-        const VecArray<T, N, M> &a) const {
-        VecArray<T, N, M> result;
-        for (int k = 0; k < M; ++k) result[k].fill(0);
+    constexpr inline VecList<T, N> operator*(const VecList<T, N> &a) const {
+        const size_t M = a.size();
+        VecList<T, N> result(M);
         for (int k = 0; k < M; ++k)
             for (int i = 0; i < N; ++i)
                 for (int j = 0; j < N; ++j)
