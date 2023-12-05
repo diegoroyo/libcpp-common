@@ -10,8 +10,8 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 file(GLOB libcpp-common-SRC "src/*.cpp" "src/**/*.cpp")
 add_library(libcpp-common STATIC ${libcpp-common-SRC})
 
-add_executable(geometry example/geometry.cpp)
+add_executable(geometry examples/geometry.cpp)
 target_link_libraries(geometry PRIVATE libcpp-common)
 
-add_executable(mesh example/mesh.cpp)
+add_executable(mesh examples/mesh.cpp)
 target_link_libraries(mesh PRIVATE libcpp-common)

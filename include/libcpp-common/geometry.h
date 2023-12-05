@@ -360,25 +360,25 @@ class Mat4 : public Mat<T, 4> {
                 0, 0, 0, z,  //
                 0, 0, 0, 1};
     }
-    static constexpr Mat4<T> rotationX(float rad) {
+    static constexpr Mat4<T> rotation_X(float rad) {
         return {1, 0,         0,          0,  //
                 0, cosf(rad), -sinf(rad), 0,  //
                 0, sinf(rad), cosf(rad),  0,  //
                 0, 0,         0,          1};
     }
-    static constexpr Mat4<T> rotationY(float rad) {
+    static constexpr Mat4<T> rotation_Y(float rad) {
         return {cosf(rad),  0, sinf(rad), 0,  //
                 0,          1, 0,         0,  //
                 -sinf(rad), 0, cosf(rad), 0,  //
                 0,          0, 0,         1};
     }
-    static constexpr Mat4<T> rotationZ(float rad) {
+    static constexpr Mat4<T> rotation_Z(float rad) {
         return {cosf(rad), -sinf(rad), 0, 0,  //
                 sinf(rad), cosf(rad),  0, 0,  //
                 0,         0,          1, 0,  //
                 0,         0,          0, 1};
     }
-    static constexpr Mat4<T> rotationAxisAngle(Vec4f axis, float rad) {
+    static constexpr Mat4<T> rotation_axis_angle(Vec4f axis, float rad) {
         float c = cosf(rad), mc = 1 - c;
         float s = sinf(rad), ms = 1 - s;
         float x = axis.x(), y = axis.y(), z = axis.z();
@@ -394,10 +394,10 @@ class Mat4 : public Mat<T, 4> {
                 0, 0, z, 0,  //
                 0, 0, 0, 1};
     }
-    static constexpr Mat4<T> changeOfBasis(const Vec<T, 4> &u,
-                                           const Vec<T, 4> &v,
-                                           const Vec<T, 4> &w,
-                                           const Vec<T, 4> &o) {
+    static constexpr Mat4<T> change_of_basis(const Vec<T, 4> &u,
+                                             const Vec<T, 4> &v,
+                                             const Vec<T, 4> &w,
+                                             const Vec<T, 4> &o) {
         return Mat4<T>(u, v, w, o);
     }
 
