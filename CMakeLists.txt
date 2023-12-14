@@ -15,3 +15,6 @@ target_link_libraries(geometry PRIVATE libcpp-common)
 
 add_executable(mesh examples/mesh.cpp)
 target_link_libraries(mesh PRIVATE libcpp-common)
+
+add_executable(bitmap examples/bitmap.cpp)
+target_link_libraries(bitmap PRIVATE libcpp-common)
