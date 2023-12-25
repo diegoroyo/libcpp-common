@@ -132,7 +132,8 @@ Mesh load_ply(std::ifstream& file) {
     bool is_binary_little_endian = false;
     bool is_binary_big_endian = false;
     if (ply != "ply")
-        throw CommonMeshException("Unexpected error: file is not a ply file?");
+        throw detail::CommonMeshException(
+            "PLY Unexpected error: file is not a ply file?");
     if (format == "format ascii 1.0") {
         is_ascii = true;
     } else if (format == "format binary_little_endian 1.0") {
@@ -140,7 +141,8 @@ Mesh load_ply(std::ifstream& file) {
     } else if (format == "format binary_big_endian 1.0") {
         is_binary_big_endian = true;
     } else {
-        throw CommonMeshException("Unsupported ply format: " + format);
+        throw detail::CommonMeshException("PLY Unsupported ply format: " +
+                                          format);
     }
 
     Mesh mesh;
@@ -216,7 +218,7 @@ Mesh load_ply(std::ifstream& file) {
                    type == "char") {
             return read_ascii<int>(is);
         }
-        throw CommonMeshException("Unsupported type: " + type);
+        throw detail::CommonMeshException("PLY Unsupported type: " + type);
     };
 
     auto read_value_binary = [&is_binary_little_endian, &is_binary_big_endian](
@@ -235,7 +237,7 @@ Mesh load_ply(std::ifstream& file) {
                 return read_big_endian<uint8_t>(is);
             }
         }
-        throw CommonMeshException("Unsupported type: " + type);
+        throw detail::CommonMeshException("PLY Unsupported type: " + type);
     };
 
     auto read_value = [&is_ascii, &read_value_ascii, &read_value_binary](
@@ -272,8 +274,9 @@ Mesh load_ply(std::ifstream& file) {
                     uint8_t length =
                         read_value(fproperty->length_type(), file, ss);
                     if (length != 3)
-                        throw CommonMeshException("Unexpected face length: " +
-                                                  std::to_string(length));
+                        throw detail::CommonMeshException(
+                            "PLY Unexpected face length: " +
+                            std::to_string(length));
 
                     Vec3u face;
                     for (size_t i = 0; i < length; ++i) {

@@ -18,47 +18,47 @@
 template <typename T, unsigned int N>
 class Vec : public std::array<T, N> {
    public:
-    constexpr T &x() { return (*this)[0]; }
-    constexpr const T &x() const { return (*this)[0]; }
-    constexpr T &y() {
+    constexpr T& x() { return (*this)[0]; }
+    constexpr const T& x() const { return (*this)[0]; }
+    constexpr T& y() {
         static_assert(N >= 2, "Vec does not have a Y component");
         return (*this)[1];
     }
-    constexpr const T &y() const {
+    constexpr const T& y() const {
         static_assert(N >= 2, "Vec does not have a Y component");
         return (*this)[1];
     }
-    constexpr T &z() {
+    constexpr T& z() {
         static_assert(N >= 3, "Vec does not have a Z component");
         return (*this)[2];
     }
-    constexpr const T &z() const {
+    constexpr const T& z() const {
         static_assert(N >= 3, "Vec does not have a Z component");
         return (*this)[2];
     }
-    constexpr T &w() {
+    constexpr T& w() {
         static_assert(N >= 4, "Vec does not have a W component");
         return (*this)[3];
     }
-    constexpr const T &w() const {
+    constexpr const T& w() const {
         static_assert(N >= 4, "Vec does not have a W component");
         return (*this)[3];
     }
 
-    constexpr inline bool operator==(const Vec<T, N> &o) const noexcept {
+    constexpr inline bool operator==(const Vec<T, N>& o) const noexcept {
         for (int i = 0; i < N; ++i)
             if ((*this)[i] != o[i]) return false;
         return true;
     }
-    constexpr inline Vec<T, N> operator+(const Vec<T, N> &o) const noexcept {
+    constexpr inline Vec<T, N> operator+(const Vec<T, N>& o) const noexcept {
         Vec<T, N> result;
         for (int i = 0; i < N; ++i) result[i] = (*this)[i] + o[i];
         return result;
     }
-    constexpr inline void operator+=(const Vec<T, N> &o) noexcept {
+    constexpr inline void operator+=(const Vec<T, N>& o) noexcept {
         for (int i = 0; i < N; ++i) (*this)[i] += o[i];
     }
-    constexpr inline Vec<T, N> operator-(const Vec<T, N> &o) const noexcept {
+    constexpr inline Vec<T, N> operator-(const Vec<T, N>& o) const noexcept {
         Vec<T, N> result;
         for (int i = 0; i < N; ++i) result[i] = (*this)[i] - o[i];
         return result;
@@ -68,7 +68,7 @@ class Vec : public std::array<T, N> {
         for (int i = 0; i < N; ++i) result[i] = -(*this)[i];
         return result;
     }
-    constexpr inline void operator-=(const Vec<T, N> &o) noexcept {
+    constexpr inline void operator-=(const Vec<T, N>& o) noexcept {
         for (int i = 0; i < N; ++i) (*this)[i] -= o[i];
     }
     constexpr inline Vec<T, N> operator*(const float f) const noexcept {
@@ -79,12 +79,12 @@ class Vec : public std::array<T, N> {
     constexpr inline void operator*=(const float f) noexcept {
         for (int i = 0; i < N; ++i) (*this)[i] *= f;
     }
-    constexpr inline Vec<T, N> operator*(const Vec<T, N> &o) const noexcept {
+    constexpr inline Vec<T, N> operator*(const Vec<T, N>& o) const noexcept {
         Vec<T, N> result;
         for (int i = 0; i < N; ++i) result[i] = (*this)[i] * o[i];
         return result;
     }
-    constexpr inline void operator*=(const Vec<T, N> &o) noexcept {
+    constexpr inline void operator*=(const Vec<T, N>& o) noexcept {
         for (int i = 0; i < N; ++i) (*this)[i] *= o[i];
     }
     constexpr inline Vec<T, N> operator/(const float f) const noexcept {
@@ -108,7 +108,7 @@ class Vec : public std::array<T, N> {
         return result;
     }
 
-    friend std::ostream &operator<<(std::ostream &s, const Vec<T, N> &v) {
+    friend std::ostream& operator<<(std::ostream& s, const Vec<T, N>& v) {
         s << "(";
         for (int i = 0; i < N - 1; ++i) {
             s << v[i] << ", ";
@@ -119,11 +119,19 @@ class Vec : public std::array<T, N> {
 };
 
 template <typename T>
+class Vec2 : public Vec<T, 2> {
+   public:
+    constexpr Vec2(T x = 0) : Vec<T, 2>{x, x} {}
+    constexpr Vec2(T x, T y) : Vec<T, 2>{x, y} {}
+    constexpr Vec2(const Vec<T, 2>&& v) : Vec<T, 2>(v) {}
+};
+
+template <typename T>
 class Vec3 : public Vec<T, 3> {
    public:
     constexpr Vec3(T x = 0) : Vec<T, 3>{x, x, x} {}
     constexpr Vec3(T x, T y, T z) : Vec<T, 3>{x, y, z} {}
-    constexpr Vec3(const Vec<T, 3> &&v) : Vec<T, 3>(v) {}
+    constexpr Vec3(const Vec<T, 3>&& v) : Vec<T, 3>(v) {}
 };
 
 template <typename T>
@@ -132,18 +140,18 @@ class Vec4 : public Vec<T, 4> {
     constexpr Vec4(T x = 0) : Vec<T, 4>{x, x, x, x} {}
     constexpr Vec4(Vec3<T> v, T w = 0) : Vec<T, 4>{v.x(), v.y(), v.z(), w} {}
     constexpr Vec4(T x, T y, T z, T w = 0) : Vec<T, 4>{x, y, z, w} {}
-    constexpr Vec4(const Vec<T, 4> &&v) : Vec<T, 4>(v) {}
+    constexpr Vec4(const Vec<T, 4>&& v) : Vec<T, 4>(v) {}
 };
 
 template <typename T, unsigned int N>
-constexpr T dot(const Vec<T, N> &u, const Vec<T, N> &v) {
+constexpr T dot(const Vec<T, N>& u, const Vec<T, N>& v) {
     T result = 0;
     for (int i = 0; i < N; ++i) result += u[i] * v[i];
     return result;
 }
 
 template <typename T>
-constexpr Vec<T, 3> cross(const Vec<T, 3> &u, const Vec<T, 3> &v) {
+constexpr Vec<T, 3> cross(const Vec<T, 3>& u, const Vec<T, 3>& v) {
     Vec<T, 3> result{u.y() * v.z() - u.z() * v.y(),
                      u.z() * v.x() - u.x() * v.z(),
                      u.x() * v.y() - u.y() * v.x()};
@@ -151,12 +159,16 @@ constexpr Vec<T, 3> cross(const Vec<T, 3> &u, const Vec<T, 3> &v) {
 }
 
 template <typename T>
-constexpr Vec<T, 4> cross(const Vec<T, 4> &u, const Vec<T, 4> &v) {
+constexpr Vec<T, 4> cross(const Vec<T, 4>& u, const Vec<T, 4>& v) {
     Vec<T, 4> result{u.y() * v.z() - u.z() * v.y(),
                      u.z() * v.x() - u.x() * v.z(),
                      u.x() * v.y() - u.y() * v.x(), 0.0f};
     return result;
 }
+
+using Vec2f = Vec2<float>;
+using Vec2i = Vec2<int>;
+using Vec2u = Vec2<unsigned int>;
 
 using Vec3f = Vec3<float>;
 using Vec3i = Vec3<int>;
@@ -175,14 +187,14 @@ class VecList : public std::vector<Vec<T, N>> {
 
    public:
     using Base::Base;
-    VecList(size_t count, const Vec<T, N> &value = Vec<T, N>())
+    VecList(size_t count, const Vec<T, N>& value = Vec<T, N>())
         : Base(count, value) {}
 
-    T *data_flat() { return (T *)this->Base::data(); }
-    const T *data_flat() const { return (const T *)this->Base::data(); }
+    T* data_flat() { return (T*)this->Base::data(); }
+    const T* data_flat() const { return (const T*)this->Base::data(); }
     size_t size_flat() const { return this->Base::size() * N; }
 
-    constexpr inline void append(const VecList<T, N> &other) {
+    constexpr inline void append(const VecList<T, N>& other) {
         this->Base::insert(this->Base::end(), other.begin(), other.end());
     }
 
@@ -201,7 +213,7 @@ class VecList : public std::vector<Vec<T, N>> {
         return result;
     }
 
-    friend std::ostream &operator<<(std::ostream &s, const VecList<T, N> &a) {
+    friend std::ostream& operator<<(std::ostream& s, const VecList<T, N>& a) {
         s << "[" << std::endl;
         for (int k = 0; k < a.Base::size(); ++k)
             s << "  " << k << ": " << a[k] << std::endl;
@@ -230,15 +242,15 @@ class Mat : public std::array<Vec<T, N>, N> {
         return result;
     }
 
-    constexpr inline T &operator()(const size_t i, const size_t j) {
+    constexpr inline T& operator()(const size_t i, const size_t j) {
         return (*this).at(j).at(i);
     }
-    constexpr inline const T &operator()(const size_t i, const size_t j) const {
+    constexpr inline const T& operator()(const size_t i, const size_t j) const {
         return (*this).at(j).at(i);
     }
-    constexpr inline T &operator[](const size_t i) = delete;
+    constexpr inline T& operator[](const size_t i) = delete;
 
-    constexpr inline Mat<T, N> operator*(const Mat<T, N> &o) const {
+    constexpr inline Mat<T, N> operator*(const Mat<T, N>& o) const {
         Mat<T, N> result;
         for (int i = 0; i < N; ++i) result.at(i).fill(0);
         for (int i = 0; i < N; ++i)
@@ -253,14 +265,14 @@ class Mat : public std::array<Vec<T, N>, N> {
             for (int j = 0; j < N; ++j) result(i, j) = (*this)(i, j) * f;
         return result;
     }
-    constexpr inline Vec<T, N> operator*(const Vec<T, N> &v) const {
+    constexpr inline Vec<T, N> operator*(const Vec<T, N>& v) const {
         Vec<T, N> result;
         result.fill(0);
         for (int i = 0; i < N; ++i)
             for (int j = 0; j < N; ++j) result[i] += (*this)(i, j) * v[j];
         return result;
     }
-    constexpr inline VecList<T, N> operator*(const VecList<T, N> &a) const {
+    constexpr inline VecList<T, N> operator*(const VecList<T, N>& a) const {
         const size_t M = a.size();
         VecList<T, N> result(M);
         for (int k = 0; k < M; ++k)
@@ -299,7 +311,7 @@ class Mat : public std::array<Vec<T, N>, N> {
         return result;
     }
 
-    friend std::ostream &operator<<(std::ostream &s, const Mat<T, N> &v) {
+    friend std::ostream& operator<<(std::ostream& s, const Mat<T, N>& v) {
         for (int i = 0; i < N; ++i) {
             if (i == 0)
                 s << "/ ";
@@ -330,13 +342,13 @@ class Mat3 : public Mat<T, 3> {
     constexpr Mat3(T x = 0) : Mat<T, 3>() {
         for (int i = 0; i < 3; ++i) (*this).at(i).fill(x);
     }
-    constexpr Mat3(const Vec<T, 3> &u, const Vec<T, 3> &v, const Vec<T, 3> &w,
-                   const Vec<T, 3> &o)
+    constexpr Mat3(const Vec<T, 3>& u, const Vec<T, 3>& v, const Vec<T, 3>& w,
+                   const Vec<T, 3>& o)
         : Mat<T, 3>{u, v, w} {}
     constexpr Mat3(T a, T b, T c, T d, T e, T f, T g, T h, T i)
         : Mat<T, 3>{Vec<T, 3>{a, d, g}, Vec<T, 3>{b, e, h},
                     Vec<T, 3>{c, f, i}} {}
-    constexpr Mat3(const Mat<T, 3> &&m) : Mat<T, 3>(m) {}
+    constexpr Mat3(const Mat<T, 3>&& m) : Mat<T, 3>(m) {}
 };
 
 template <typename T>
@@ -345,14 +357,14 @@ class Mat4 : public Mat<T, 4> {
     constexpr Mat4(T x = 0) : Mat<T, 4>() {
         for (int i = 0; i < 4; ++i) (*this).at(i).fill(x);
     }
-    constexpr Mat4(const Vec<T, 4> &u, const Vec<T, 4> &v, const Vec<T, 4> &w,
-                   const Vec<T, 4> &o)
+    constexpr Mat4(const Vec<T, 4>& u, const Vec<T, 4>& v, const Vec<T, 4>& w,
+                   const Vec<T, 4>& o)
         : Mat<T, 4>{u, v, w, o} {}
     constexpr Mat4(T a, T b, T c, T d, T e, T f, T g, T h, T i, T j, T k, T l,
                    T m, T n, T o, T p)
         : Mat<T, 4>{Vec<T, 4>{a, e, i, m}, Vec<T, 4>{b, f, j, n},
                     Vec<T, 4>{c, g, k, o}, Vec<T, 4>{d, h, l, p}} {}
-    constexpr Mat4(const Mat<T, 4> &&m) : Mat<T, 4>(m) {}
+    constexpr Mat4(const Mat<T, 4>&& m) : Mat<T, 4>(m) {}
 
     static constexpr Mat4<T> translation(float x, float y, float z) {
         return {0, 0, 0, x,  //
@@ -394,10 +406,10 @@ class Mat4 : public Mat<T, 4> {
                 0, 0, z, 0,  //
                 0, 0, 0, 1};
     }
-    static constexpr Mat4<T> change_of_basis(const Vec<T, 4> &u,
-                                             const Vec<T, 4> &v,
-                                             const Vec<T, 4> &w,
-                                             const Vec<T, 4> &o) {
+    static constexpr Mat4<T> change_of_basis(const Vec<T, 4>& u,
+                                             const Vec<T, 4>& v,
+                                             const Vec<T, 4>& w,
+                                             const Vec<T, 4>& o) {
         return Mat4<T>(u, v, w, o);
     }
 

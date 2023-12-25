@@ -21,12 +21,6 @@ struct Mesh {
     VecList3u faces;
 };
 
-class CommonMeshException : public detail::CommonException {
-   public:
-    CommonMeshException(const std::string& msg)
-        : detail::CommonException(msg) {}
-};
-
 Mesh mesh_load(const char* filename);
 
 };  // namespace common

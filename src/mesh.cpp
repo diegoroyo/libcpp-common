@@ -13,14 +13,14 @@ Mesh mesh_load(const char* filename) {
     std::ifstream file(filename);
 
     if (!file.is_open())
-        throw CommonMeshException("Could not open file " +
-                                  std::string(filename));
+        throw detail::CommonMeshException("Could not open file " +
+                                          std::string(filename));
 
     // Write here all the loaders
     if (test_ply(file)) return load_ply(file);
 
-    throw CommonMeshException("No mesh loader found for file " +
-                              std::string(filename));
+    throw detail::CommonMeshException("No mesh loader found for file " +
+                                      std::string(filename));
 }
 
 };  // namespace common

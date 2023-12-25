@@ -23,5 +23,15 @@ class CommonException : public std::exception {
     std::string m_msg;
 };
 
+class CommonMeshException : public CommonException {
+   public:
+    CommonMeshException(const std::string& msg) : CommonException(msg) {}
+};
+
+class CommonBitmapException : public CommonException {
+   public:
+    CommonBitmapException(const std::string& msg) : CommonException(msg) {}
+};
+
 };  // namespace detail
 };  // namespace common
