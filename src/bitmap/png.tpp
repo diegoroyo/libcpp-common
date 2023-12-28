@@ -16,10 +16,10 @@ namespace common {
 
 /// PNG header and chunk metadata ///
 
-static const size_t HEADER_SIZE = 8;
-static const uint8_t HEADER[] = {0x89, 0x50, 0x4E, 0x47,
-                                 0x0D, 0x0A, 0x1A, 0x0A};
-static const size_t CHUNK_TYPE_SIZE = 4;
+static inline const size_t HEADER_SIZE = 8;
+static inline const uint8_t HEADER[] = {0x89, 0x50, 0x4E, 0x47,
+                                        0x0D, 0x0A, 0x1A, 0x0A};
+static inline const size_t CHUNK_TYPE_SIZE = 4;
 
 template <typename T>
 bool test_png(std::ifstream& file) {
@@ -40,10 +40,10 @@ bool test_png(std::ifstream& file) {
 /// Chunk CRC computation ///
 
 // Adapted from https://datatracker.ietf.org/doc/html/rfc2083#section-15
-static bool CRC_TABLE_COMPUTED = false;
-static uint32_t CRC_TABLE[256];
+static inline bool CRC_TABLE_COMPUTED = false;
+static inline uint32_t CRC_TABLE[256];
 
-static void make_crc_table() {
+static inline void make_crc_table() {
     for (uint32_t n = 0; n < 256; ++n) {
         uint32_t c = n;
         for (int k = 0; k < 8; ++k) {
@@ -57,7 +57,7 @@ static void make_crc_table() {
     CRC_TABLE_COMPUTED = true;
 }
 
-uint32_t compute_crc(uint8_t* buf, size_t len) {
+static inline uint32_t compute_crc(uint8_t* buf, size_t len) {
     if (!CRC_TABLE_COMPUTED) make_crc_table();
     uint32_t crc = 0xFFFFFFFF;
     for (size_t n = 0; n < len; ++n) {
@@ -66,11 +66,11 @@ uint32_t compute_crc(uint8_t* buf, size_t len) {
     return crc ^ 0xFFFFFFFF;
 }
 
-static uint32_t read_big_endian(const uint8_t* read) {
+static inline uint32_t read_big_endian(const uint8_t* read) {
     return read[3] | read[2] << 8 | read[1] << 16 | read[0] << 24;
 }
 
-static uint32_t read_little_endian(const uint8_t* read) {
+static inline uint32_t read_little_endian(const uint8_t* read) {
     return read[0] | read[1] << 8 | read[2] << 16 | read[3] << 24;
 }
 
@@ -94,7 +94,7 @@ struct IHDR {
         interlace_method;
 };
 
-PNGChunk read_png_chunk(std::ifstream& file) {
+static inline PNGChunk read_png_chunk(std::ifstream& file) {
     uint8_t buffer[4];
     PNGChunk chunk;
     file.read((char*)buffer, 4);
@@ -188,9 +188,9 @@ IHDR apply_ihdr(Grid2D<T>& image, const PNGChunk& chunk,
     return ihdr;
 }
 
-static const size_t IDAT_ADLER_SIZE = 4;
+static inline const size_t IDAT_ADLER_SIZE = 4;
 
-uint32_t adler32_checksum(const uint8_t* buf, size_t len) {
+static inline uint32_t adler32_checksum(const uint8_t* buf, size_t len) {
     const uint32_t BASE = 65521;  // largest prime number smaller than 65536
     int32_t s1 = 1;
     int32_t s2 = 0;
@@ -201,10 +201,12 @@ uint32_t adler32_checksum(const uint8_t* buf, size_t len) {
     return (s2 << 16) + s1;
 }
 
-uint8_t apply_png_filter(const size_t x, const size_t y, const size_t c,
-                         const uint8_t channels, const uint8_t filter_type,
-                         const uint8_t* previous_row, const uint8_t* current_row
-                         /* const PLTE* plte = nullptr */) {
+static inline uint8_t apply_png_filter(const size_t x, const size_t y,
+                                       const size_t c, const uint8_t channels,
+                                       const uint8_t filter_type,
+                                       const uint8_t* previous_row,
+                                       const uint8_t* current_row
+                                       /* const PLTE* plte = nullptr */) {
     size_t bpp = channels;   // num bytes for a complete pixel
     size_t i = x * bpp + c;  // current byte in row
     uint8_t left = x == 0 ? 0 : current_row[i - bpp];

@@ -40,18 +40,22 @@ class Grid2D : protected std::vector<std::vector<T>> {
     using Base::Base;
     Grid2D(bool repeat = true)
         : m_width(0), m_height(0), m_repeat(repeat), Base() {}
-    Grid2D(size_t width, size_t height, T value = 0, bool repeat = true)
+    Grid2D(size_t width, size_t height, const T& value = 0, bool repeat = true)
         : m_width(width), m_height(height), m_repeat(repeat), Base() {
         this->resize(width, height, value);
     }
 
-    void resize(size_t width, size_t height, T value = 0) {
+    void resize(size_t width, size_t height, const T& value = 0) {
         m_width = width;
         m_height = height;
         Base::resize(height);
         for (auto& row : *this) {
             row.resize(width, value);
         }
+    }
+
+    void fill(const T& value) {
+        for (auto& row : *this) std::fill(row.begin(), row.end(), value);
     }
 
     inline size_t width() const { return m_width; }

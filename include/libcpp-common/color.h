@@ -51,6 +51,7 @@ class Color3 : public Color<T, 3> {
     constexpr Color3(T l = 0) : Color<T, 3>{l, l, l} {}
     constexpr Color3(T r, T g, T b) : Color<T, 3>{r, g, b} {}
     constexpr Color3(const Color<T, 3>&& c) : Color<T, 3>(c) {}
+    constexpr Color3(const Vec<T, 3>&& v) : Color<T, 3>{v} {}
 
     static const Color3  //
         Black,           //
@@ -71,6 +72,7 @@ class Color4 : public Color<T, 4> {
         : Color<T, 4>{c.r(), c.g(), c.b(), a} {}
     constexpr Color4(T r, T g, T b, T a = 1) : Color<T, 4>{r, g, b, a} {}
     constexpr Color4(const Color<T, 4>&& v) : Color<T, 4>(v) {}
+    constexpr Color4(const Vec<T, 4>&& v) : Color<T, 4>{v} {}
 
     static const Color4  //
         Black,           //
