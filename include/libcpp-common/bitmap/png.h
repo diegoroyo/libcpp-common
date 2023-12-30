@@ -14,9 +14,6 @@
 namespace common {
 
 template <typename T>
-class Grid2D;
-
-template <typename T>
 bool test_png(std::ifstream& file);
 
 template <typename T>

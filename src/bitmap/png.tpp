@@ -4,10 +4,8 @@
  *
  * Portable Network Graphics loader
  */
-
 #include <cstring>
 #include <fstream>
-#include <iostream>
 #include <vector>
 
 #include "libcpp-common/detail/exception.h"

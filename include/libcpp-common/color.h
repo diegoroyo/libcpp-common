@@ -10,7 +10,19 @@
 
 template <typename T, unsigned int N>
 class Color : public Vec<T, N> {
+   private:
+    using Base = Vec<T, N>;
+
+    // delete xyzw accessors
+    using Base::w;
+    using Base::x;
+    using Base::y;
+    using Base::z;
+
    public:
+    using Base::Base;
+    Color(const Vec<T, N>&& v) : Base(v) {}
+
     constexpr T& r() {
         static_assert(N == 3 || N == 4, "Color does not have a R component");
         return (*this)[0];
@@ -43,49 +55,30 @@ class Color : public Vec<T, N> {
         static_assert(N == 4, "Color does not have an A component");
         return (*this)[3];
     }
+
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    Color(T r, T g, T b)
+        : Color<T, 4>{r, g, b, std::is_floating_point_v<T> ? 1 : 255} {};
+
+#define COMMON_color(name, r, g, b)                                            \
+    static constexpr std::enable_if_t<N == 3 || N == 4, Color> name() {        \
+        return std::is_floating_point_v<T> ? Color(r, g, b)                    \
+                                           : Color(r * 255, g * 255, b * 255); \
+    }
+
+    COMMON_color(Red, 1, 0, 0);
+    COMMON_color(Green, 0, 1, 0);
+    COMMON_color(Blue, 0, 0, 1);
+    COMMON_color(Cyan, 0, 1, 1);
+    COMMON_color(Magenta, 1, 0, 1);
+    COMMON_color(Yellow, 1, 1, 0);
+    COMMON_color(White, 1, 1, 1);
+    COMMON_color(Black, 0, 0, 0);
+
+#undef COMMON_color
 };
 
-template <typename T>
-class Color3 : public Color<T, 3> {
-   public:
-    constexpr Color3(T l = 0) : Color<T, 3>{l, l, l} {}
-    constexpr Color3(T r, T g, T b) : Color<T, 3>{r, g, b} {}
-    constexpr Color3(const Color<T, 3>&& c) : Color<T, 3>(c) {}
-    constexpr Color3(const Vec<T, 3>&& v) : Color<T, 3>{v} {}
-
-    static const Color3  //
-        Black,           //
-        White,           //
-        Red,             //
-        Green,           //
-        Blue,            //
-        Yellow,          //
-        Magenta,         //
-        Cyan;
-};
-
-template <typename T>
-class Color4 : public Color<T, 4> {
-   public:
-    constexpr Color4(T l = 0) : Color<T, 4>{l, l, l, l} {}
-    constexpr Color4(Color3<T> c, T a = 1)
-        : Color<T, 4>{c.r(), c.g(), c.b(), a} {}
-    constexpr Color4(T r, T g, T b, T a = 1) : Color<T, 4>{r, g, b, a} {}
-    constexpr Color4(const Color<T, 4>&& v) : Color<T, 4>(v) {}
-    constexpr Color4(const Vec<T, 4>&& v) : Color<T, 4>{v} {}
-
-    static const Color4  //
-        Black,           //
-        White,           //
-        Red,             //
-        Green,           //
-        Blue,            //
-        Yellow,          //
-        Magenta,         //
-        Cyan;
-};
-
-using Color3f = Color3<float>;
-using Color3u = Color3<unsigned int>;
-using Color4f = Color4<float>;
-using Color4u = Color4<unsigned int>;
+using Color3f = Color<float, 3>;
+using Color3u = Color<unsigned int, 3>;
+using Color4f = Color<float, 4>;
+using Color4u = Color<unsigned int, 4>;

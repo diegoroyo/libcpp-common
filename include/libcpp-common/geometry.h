@@ -11,13 +11,26 @@
 
 #include <array>
 #include <ostream>
+#include <type_traits>
 #include <vector>
 
 /// VECTOR ///
 
 template <typename T, unsigned int N>
 class Vec : public std::array<T, N> {
+   private:
+    using Base = std::array<T, N>;
+
    public:
+    using type = T;
+    static constexpr unsigned int size = N;
+
+    Vec(T x = 0) : std::array<T, N>() { Base::fill(x); }
+    template <typename... Args,
+              typename = std::enable_if_t<sizeof...(Args) == N>>
+    Vec(Args&&... args)
+        : std::array<T, N>{static_cast<T>(std::forward<Args>(args))...} {}
+
     constexpr T& x() { return (*this)[0]; }
     constexpr const T& x() const { return (*this)[0]; }
     constexpr T& y() {
@@ -50,6 +63,14 @@ class Vec : public std::array<T, N> {
             if ((*this)[i] != o[i]) return false;
         return true;
     }
+    constexpr inline Vec<T, N> operator+(const T v) const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] + v;
+        return result;
+    }
+    constexpr inline void operator+=(const T v) noexcept {
+        for (unsigned int i = 0; i < N; ++i) (*this)[i] += v;
+    }
     constexpr inline Vec<T, N> operator+(const Vec<T, N>& o) const noexcept {
         Vec<T, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] + o[i];
@@ -58,25 +79,33 @@ class Vec : public std::array<T, N> {
     constexpr inline void operator+=(const Vec<T, N>& o) noexcept {
         for (unsigned int i = 0; i < N; ++i) (*this)[i] += o[i];
     }
-    constexpr inline Vec<T, N> operator-(const Vec<T, N>& o) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] - o[i];
-        return result;
-    }
     constexpr inline Vec<T, N> operator-() const noexcept {
         Vec<T, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = -(*this)[i];
         return result;
     }
+    constexpr inline Vec<T, N> operator-(const T v) const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] - v;
+        return result;
+    }
+    constexpr inline void operator-=(const T v) noexcept {
+        for (unsigned int i = 0; i < N; ++i) (*this)[i] -= v;
+    }
+    constexpr inline Vec<T, N> operator-(const Vec<T, N>& o) const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] - o[i];
+        return result;
+    }
     constexpr inline void operator-=(const Vec<T, N>& o) noexcept {
         for (unsigned int i = 0; i < N; ++i) (*this)[i] -= o[i];
     }
-    constexpr inline Vec<T, N> operator*(const float f) const noexcept {
+    constexpr inline Vec<T, N> operator*(const T v) const noexcept {
         Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * f;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * v;
         return result;
     }
-    constexpr inline void operator*=(const float f) noexcept {
+    constexpr inline void operator*=(const T f) noexcept {
         for (unsigned int i = 0; i < N; ++i) (*this)[i] *= f;
     }
     constexpr inline Vec<T, N> operator*(const Vec<T, N>& o) const noexcept {
@@ -87,13 +116,13 @@ class Vec : public std::array<T, N> {
     constexpr inline void operator*=(const Vec<T, N>& o) noexcept {
         for (unsigned int i = 0; i < N; ++i) (*this)[i] *= o[i];
     }
-    constexpr inline Vec<T, N> operator/(const float f) const noexcept {
+    constexpr inline Vec<T, N> operator/(const T v) const noexcept {
         Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] / f;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] / v;
         return result;
     }
-    constexpr inline void operator/=(const float f) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] /= f;
+    constexpr inline void operator/=(const T v) noexcept {
+        for (unsigned int i = 0; i < N; ++i) (*this)[i] /= v;
     }
     constexpr inline T module2() const noexcept {
         T result = 0;
@@ -101,18 +130,31 @@ class Vec : public std::array<T, N> {
         return result;
     }
     constexpr inline float module() const noexcept { return sqrt(module2()); }
-    constexpr inline Vec<T, N> normalized(float l = 1) const noexcept {
+    constexpr inline Vec<T, N> normalized(const T l = 1) const noexcept {
+        static_assert(std::is_floating_point_v<T>,
+                      "Type must be a floating point");
         float mod = l / module();
         Vec<T, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * mod;
         return result;
     }
+    constexpr inline T max() const noexcept {
+        T current_max = 0;
+        for (unsigned int i = 0; i < N; ++i)
+            current_max = std::max(current_max, (*this)[i]);
+        return current_max;
+    }
 
     template <typename T2>
-    constexpr inline Vec<T2, N> cast_to() const {
+    inline Vec<T2, N> cast_to() const {
         Vec<T2, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = (T2)(*this)[i];
         return result;
+    }
+
+    template <std::size_t Index>
+    const T get() const {
+        return (*this)[Index];
     }
 
     friend std::ostream& operator<<(std::ostream& s, const Vec<T, N>& v) {
@@ -125,60 +167,11 @@ class Vec : public std::array<T, N> {
     }
 };
 
-template <typename T>
-class Vec2 : public Vec<T, 2> {
-   public:
-    using Vec<T, 2>::Vec;
-    constexpr Vec2(T x = 0) : Vec<T, 2>{x, x} {}
-    constexpr Vec2(T x, T y) : Vec<T, 2>{x, y} {}
-    constexpr Vec2(const Vec<T, 2>&& v) : Vec<T, 2>(v) {}
+template <typename T, unsigned int N>
+struct std::tuple_size<Vec<T, N>> : std::integral_constant<std::size_t, N> {};
 
-    template <std::size_t Index>
-    const T get() const {
-        return (*this)[Index];
-    }
-};
-
-template <typename T>
-struct std::tuple_size<Vec2<T>> : std::integral_constant<std::size_t, 2> {};
-
-template <std::size_t Index, typename T>
-struct std::tuple_element<Index, Vec2<T>> {
-    using type = T;
-};
-
-template <typename T>
-class Vec3 : public Vec<T, 3> {
-   public:
-    using Vec<T, 3>::Vec;
-    constexpr Vec3(T x = 0) : Vec<T, 3>{x, x, x} {}
-    constexpr Vec3(T x, T y, T z) : Vec<T, 3>{x, y, z} {}
-    constexpr Vec3(const Vec<T, 3>&& v) : Vec<T, 3>(v) {}
-};
-
-template <typename T>
-struct std::tuple_size<Vec3<T>> : std::integral_constant<std::size_t, 3> {};
-
-template <std::size_t Index, typename T>
-struct std::tuple_element<Index, Vec3<T>> {
-    using type = T;
-};
-
-template <typename T>
-class Vec4 : public Vec<T, 4> {
-   public:
-    using Vec<T, 4>::Vec;
-    constexpr Vec4(T x = 0) : Vec<T, 4>{x, x, x, x} {}
-    constexpr Vec4(Vec3<T> v, T w = 0) : Vec<T, 4>{v.x(), v.y(), v.z(), w} {}
-    constexpr Vec4(T x, T y, T z, T w = 0) : Vec<T, 4>{x, y, z, w} {}
-    constexpr Vec4(const Vec<T, 4>&& v) : Vec<T, 4>(v) {}
-};
-
-template <typename T>
-struct std::tuple_size<Vec4<T>> : std::integral_constant<std::size_t, 4> {};
-
-template <std::size_t Index, typename T>
-struct std::tuple_element<Index, Vec4<T>> {
+template <std::size_t Index, typename T, unsigned int N>
+struct std::tuple_element<Index, Vec<T, N>> {
     using type = T;
 };
 
@@ -205,17 +198,17 @@ constexpr Vec<T, 4> cross(const Vec<T, 4>& u, const Vec<T, 4>& v) {
     return result;
 }
 
-using Vec2f = Vec2<float>;
-using Vec2i = Vec2<int>;
-using Vec2u = Vec2<unsigned int>;
+using Vec2f = Vec<float, 2>;
+using Vec2i = Vec<int, 2>;
+using Vec2u = Vec<unsigned int, 2>;
 
-using Vec3f = Vec3<float>;
-using Vec3i = Vec3<int>;
-using Vec3u = Vec3<unsigned int>;
+using Vec3f = Vec<float, 3>;
+using Vec3i = Vec<int, 3>;
+using Vec3u = Vec<unsigned int, 3>;
 
-using Vec4f = Vec4<float>;
-using Vec4i = Vec4<int>;
-using Vec4u = Vec4<unsigned int>;
+using Vec4f = Vec<float, 4>;
+using Vec4i = Vec<int, 4>;
+using Vec4u = Vec<unsigned int, 4>;
 
 /// VECTOR OF VECTORS (based on flowering vector theme) ///
 
@@ -225,7 +218,7 @@ class VecList : public std::vector<Vec<T, N>> {
     using Base = std::vector<Vec<T, N>>;
 
    public:
-    using Base::Base;
+    VecList() : Base() {}
     VecList(size_t count, const Vec<T, N>& value = Vec<T, N>())
         : Base(count, value) {}
 
@@ -273,6 +266,9 @@ using VecList4u = VecList<unsigned int, 4>;
 
 template <typename T, unsigned int N>
 class Mat : public std::array<Vec<T, N>, N> {
+   private:
+    using Base = std::array<Vec<T, N>, N>;
+
    public:
     static constexpr Mat<T, N> identity() {
         Mat<T, N> result;
@@ -429,7 +425,7 @@ class Mat4 : public Mat<T, 4> {
                 0,         0,          1, 0,  //
                 0,         0,          0, 1};
     }
-    static constexpr Mat4<T> rotation_axis_angle(Vec4f axis, float rad) {
+    static inline Mat4<T> rotation_axis_angle(Vec4f axis, float rad) {
         float c = cosf(rad), mc = 1 - c;
         float s = sinf(rad), ms = 1 - s;
         float x = axis.x(), y = axis.y(), z = axis.z();
@@ -445,10 +441,10 @@ class Mat4 : public Mat<T, 4> {
                 0, 0, z, 0,  //
                 0, 0, 0, 1};
     }
-    static constexpr Mat4<T> change_of_basis(const Vec<T, 4>& u,
-                                             const Vec<T, 4>& v,
-                                             const Vec<T, 4>& w,
-                                             const Vec<T, 4>& o) {
+    static inline Mat4<T> change_of_basis(const Vec<T, 4>& u,
+                                          const Vec<T, 4>& v,
+                                          const Vec<T, 4>& w,
+                                          const Vec<T, 4>& o) {
         return Mat4<T>(u, v, w, o);
     }
 

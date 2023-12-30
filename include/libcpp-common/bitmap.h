@@ -6,9 +6,16 @@
  */
 #pragma once
 
+#include <functional>
 #include <type_traits>
 
+namespace common {
+template <typename T>
+class Grid2D;
+};
+
 #include "libcpp-common/bitmap/png.h"
+#include "libcpp-common/bitmap/ppm.h"
 #include "libcpp-common/color.h"
 #include "libcpp-common/detail/exception.h"
 
@@ -24,11 +31,11 @@ class Grid2D : protected std::vector<std::vector<T>> {
     bool m_repeat;
 
     // allows for numpy-like indexing (e.g. -1 is last pixel)
-    inline void idx(int& i, int& j) {
+    inline void idx(int& i, int& j) const {
         if (!m_repeat && (i < 0 || j < 0 || i >= m_width || j >= m_height))
             throw detail::CommonBitmapException("Invalid index (" +
                                                 std::to_string(i) + ", " +
-                                                std::to_string(j));
+                                                std::to_string(j) + ")");
 
         i = (i >= 0) ? (i % m_width)  //
                      : (m_width - 1 + ((i + 1) % (int)m_width));
@@ -56,6 +63,45 @@ class Grid2D : protected std::vector<std::vector<T>> {
 
     void fill(const T& value) {
         for (auto& row : *this) std::fill(row.begin(), row.end(), value);
+    }
+
+    // This alternative does not use templated functions so that
+    // reduce_f's signature is visible to the user
+    template <typename Result>
+    Result reduce(Result initial_value,
+                  Result (*const reduce_f)(Result, const T&)) const {
+        return reduce(initial_value, reduce_f);
+    }
+    template <typename Result, typename ReduceFunc>
+    Result reduce(Result initial_value, const ReduceFunc& reduce_f) const {
+        for (auto& row : *this)
+            for (auto& element : row)
+                initial_value = reduce_f(initial_value, element);
+
+        return initial_value;
+    }
+
+    // This alternative does not use templated functions so that
+    // map_f's signature is visible to the user
+    template <typename Result>
+    Grid2D<Result> map(Result (*const map_f)(const T&)) const {
+        return map(map_f);
+    }
+    template <typename Result, typename MapFunction>
+    Grid2D<Result> map(const MapFunction& map_f) const {
+        Grid2D<Result> result(width(), height());
+        for (size_t y = 0; y < height(); ++y)
+            for (size_t x = 0; x < width(); ++x)
+                result(x, y) = map_f((*this)(x, y));
+
+        return result;
+    }
+
+    void map_in_place(void (*const map_f)(T&)) { return map_in_place(map_f); }
+    template <typename MapFunction>
+    void map_in_place(const MapFunction& map_f) {
+        for (size_t y = 0; y < height(); ++y)
+            for (size_t x = 0; x < width(); ++x) map_f((*this)(x, y));
     }
 
     inline size_t width() const { return m_width; }
@@ -90,10 +136,20 @@ using Bitmap1u = Grid2D<unsigned int>;
 using Bitmap3u = Grid2D<Color3u>;
 using Bitmap4u = Grid2D<Color4u>;
 
-/// LOAD / WRITE ///
+template <typename T>
+struct bitmap_channels : std::integral_constant<uint8_t, T::size> {};
+template <>
+struct bitmap_channels<float> : std::integral_constant<uint8_t, 1> {};
+template <>
+struct bitmap_channels<unsigned int> : std::integral_constant<uint8_t, 1> {};
+
+/// LOAD / SAVE ///
 
 template <typename T>
-Grid2D<T> bitmap_load(const char* filename);
+Grid2D<T> bitmap_load(const std::string& filename);
+
+template <typename T>
+void bitmap_save(const std::string& filename, const Grid2D<T>& image);
 
 };  // namespace common
 

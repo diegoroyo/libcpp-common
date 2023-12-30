@@ -5,28 +5,20 @@
  * Image data structure with read/write operations
  */
 
+#include <filesystem>
+#include <string_view>
+
 namespace common {
 
 template <typename T>
-Grid2D<T> bitmap_load(const char* filename) {
-    static_assert(std::is_same_v<T, float> ||             //
-                      std::is_same_v<T, Color3f> ||       //
-                      std::is_same_v<T, Color4f> ||       //
-                      std::is_same_v<T, unsigned int> ||  //
-                      std::is_same_v<T, Color3u> ||       //
-                      std::is_same_v<T, Color4u>,         //
+struct bitmap_channels;
+
+template <typename T>
+Grid2D<T> bitmap_load(const std::string& filename) {
+    constexpr uint8_t channels = bitmap_channels<T>::value;
+    static_assert(channels > 0,
                   "Invalid bitmap type to load. It must be one of: float, "
                   "unsigned int, or a Color.");
-    uint8_t channels;
-    if constexpr (std::is_same_v<T, float> || std::is_same_v<T, unsigned int>) {
-        channels = 1;
-    } else if constexpr (std::is_same_v<T, Color3f> ||
-                         std::is_same_v<T, Color3u>) {
-        channels = 3;
-    } else if constexpr (std::is_same_v<T, Color4f> ||
-                         std::is_same_v<T, Color4u>) {
-        channels = 4;
-    }
     std::ifstream file(filename);
 
     if (!file.is_open())
@@ -38,6 +30,30 @@ Grid2D<T> bitmap_load(const char* filename) {
 
     throw detail::CommonBitmapException("No image loader found for file " +
                                         std::string(filename));
+}
+
+template <typename T>
+void bitmap_save(const std::string& filename, const Grid2D<T>& image) {
+    constexpr uint8_t channels = bitmap_channels<T>::value;
+    static_assert(channels > 0,
+                  "Invalid bitmap type to load. It must be one of: float, "
+                  "unsigned int, or a Color.");
+    std::ofstream file(filename, std::ios::binary);
+
+    try {
+        std::string view(filename);
+#define COMMON_ends_with(t)     \
+    view.size() >= strlen(t) && \
+        view.compare(view.size() - strlen(t), strlen(t), t) == 0
+        if (COMMON_ends_with(".ppm")) return save_ppm(file, image);
+#undef COMMON_ends_with
+
+        throw detail::CommonBitmapException("No image saver found for file " +
+                                            std::string(filename));
+    } catch (const detail::CommonBitmapException& exception) {
+        std::filesystem::remove(filename);
+        throw;
+    }
 }
 
 };  // namespace common
