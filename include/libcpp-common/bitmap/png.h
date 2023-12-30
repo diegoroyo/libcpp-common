@@ -17,7 +17,7 @@ template <typename T>
 bool test_png(std::ifstream& file);
 
 template <typename T>
-Grid2D<T> load_png(std::ifstream& file, const uint8_t channels);
+Grid2D<T> load_png(std::ifstream& file);
 
 };  // namespace common
 

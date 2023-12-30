@@ -14,11 +14,11 @@
 
 namespace common {
 
-// template <typename T>
-// bool test_ppm(std::ifstream& file);
+template <typename T>
+bool test_ppm(std::ifstream& file);
 
-// template <typename T>
-// Grid2D<T> load_ppm(std::ifstream& file, const uint8_t channels);
+template <typename T>
+Grid2D<T> load_ppm(std::ifstream& file);
 
 template <typename T>
 void save_ppm(std::ofstream& file, const Grid2D<T>& image);

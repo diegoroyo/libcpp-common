@@ -12,6 +12,9 @@
 
 namespace common {
 
+template <typename T>
+struct bitmap_channels;
+
 /// PNG header and chunk metadata ///
 
 static inline const size_t HEADER_SIZE = 8;
@@ -356,7 +359,8 @@ void apply_idat(Grid2D<T>& image, const IHDR& ihdr, std::vector<uint8_t>& idat,
 inline bool is_uppercase(const char c) { return c >= 'A' && c <= 'Z'; }
 
 template <typename T>
-Grid2D<T> load_png(std::ifstream& file, const uint8_t channels) {
+Grid2D<T> load_png(std::ifstream& file) {
+    constexpr uint8_t channels = bitmap_channels<T>::value;
     Grid2D<T> image;
 
     // Skip magic number header

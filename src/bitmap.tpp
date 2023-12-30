@@ -26,7 +26,8 @@ Grid2D<T> bitmap_load(const std::string& filename) {
                                             std::string(filename));
 
     // Write here all the loaders
-    if (test_png<T>(file)) return load_png<T>(file, channels);
+    if (test_ppm<T>(file)) return load_ppm<T>(file);
+    if (test_png<T>(file)) return load_png<T>(file);
 
     throw detail::CommonBitmapException("No image loader found for file " +
                                         std::string(filename));
@@ -45,7 +46,9 @@ void bitmap_save(const std::string& filename, const Grid2D<T>& image) {
 #define COMMON_ends_with(t)     \
     view.size() >= strlen(t) && \
         view.compare(view.size() - strlen(t), strlen(t), t) == 0
+
         if (COMMON_ends_with(".ppm")) return save_ppm(file, image);
+
 #undef COMMON_ends_with
 
         throw detail::CommonBitmapException("No image saver found for file " +

@@ -30,6 +30,10 @@ class Grid2D : protected std::vector<std::vector<T>> {
     size_t m_width, m_height;
     bool m_repeat;
 
+    constexpr inline std::vector<T>& operator[](const size_t i) {
+        return Base::operator[](i);
+    };
+
     // allows for numpy-like indexing (e.g. -1 is last pixel)
     inline void idx(int& i, int& j) const {
         if (!m_repeat && (i < 0 || j < 0 || i >= m_width || j >= m_height))
@@ -51,6 +55,7 @@ class Grid2D : protected std::vector<std::vector<T>> {
         : m_width(width), m_height(height), m_repeat(repeat), Base() {
         this->resize(width, height, value);
     }
+    void set_repeat(bool repeat) { m_repeat = repeat; }
 
     void resize(size_t width, size_t height, const T& value = 0) {
         m_width = width;
@@ -106,6 +111,7 @@ class Grid2D : protected std::vector<std::vector<T>> {
 
     inline size_t width() const { return m_width; }
     inline size_t height() const { return m_height; }
+    inline Vec2u size() const { return Vec2u(m_width, m_height); }
 
     constexpr inline T& operator()(int i, int j) {
         idx(i, j);
@@ -116,16 +122,27 @@ class Grid2D : protected std::vector<std::vector<T>> {
         return (*this).at(j).at(i);
     }
     constexpr inline T& operator()(const Vec2i& ij) {
-        int i = ij.x(), j = ij.y();
-        idx(i, j);
-        return (*this).at(j).at(i);
+        return (*this)(ij.x(), ij.y());
     }
     constexpr inline const T& operator()(const Vec2i& ij) const {
-        int i = ij.x(), j = ij.y();
-        idx(i, j);
-        return (*this).at(j).at(i);
+        return (*this)(ij.x(), ij.y());
     }
-    constexpr inline T& operator[](const size_t i) = delete;
+
+    T interpolate_linear(float i, float j) const {
+        i -= 0.5f;
+        j -= 0.5f;
+        int xa = std::floor(i), xb = std::ceil(i);
+        int ya = std::floor(j), yb = std::ceil(j);
+
+        float xi = i - xa, yi = j - ya;
+        return (*this)(xa, ya) * (1 - xi) * (1 - yi) +  //
+               (*this)(xb, ya) * xi * (1 - yi) +        //
+               (*this)(xa, yb) * (1 - xi) * yi +        //
+               (*this)(xb, yb) * xi * yi;
+    }
+    T interpolate_linear(const Vec2f& ij) const {
+        return this->interpolate_linear(ij.x(), ij.y());
+    }
 };
 
 using Bitmap1f = Grid2D<float>;

@@ -16,4 +16,7 @@ int main() {
     VecList3f list_flatten = list.divide_by_homogeneous();
 
     std::cout << list_flatten << std::endl;
+
+    Mat3f test(Vec3f(0), Vec3f(1), Vec3f(2));
+    std::cout << test << std::endl;
 }

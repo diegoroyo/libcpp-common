@@ -56,6 +56,10 @@ class Color : public Vec<T, N> {
         return (*this)[3];
     }
 
+    // convert color3 to color4
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    Color(const Color<T, 3>& c, T a = 0)
+        : Color<T, 4>{c.r(), c.g(), c.b(), a} {};
     template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
     Color(T r, T g, T b)
         : Color<T, 4>{r, g, b, std::is_floating_point_v<T> ? 1 : 255} {};

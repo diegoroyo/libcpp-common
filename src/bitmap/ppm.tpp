@@ -14,11 +14,98 @@ namespace common {
 template <typename T>
 struct bitmap_channels;
 
-// template <typename T>
-// bool test_ppm(std::ifstream& file);
+template <typename T>
+bool test_ppm(std::ifstream& file) {
+    char p = file.get();
+    char three = file.get();
 
-// template <typename T>
-// Grid2D<T> load_ppm(std::ifstream& file, const uint8_t channels);
+    bool header_ok = p == 'P' && three == '3';
+
+    file.clear();
+    file.seekg(0, std::ios::beg);
+
+    return header_ok;
+}
+
+template <typename T>
+Grid2D<T> load_ppm(std::ifstream& file) {
+    constexpr uint8_t channels = bitmap_channels<T>::value;
+    if constexpr (channels != 3)
+        throw detail::CommonBitmapException(
+            "PPM load only supports three-channel Bitmap objects");
+
+    Grid2D<T> image;
+
+    // Skip magic number header
+    file.seekg(2, std::ios::beg);
+
+    int phase = 0;
+    size_t width, height;
+    uint32_t depth;
+    size_t x, y, c;
+    while (phase != -1 && !file.eof()) {
+        char peek = file.peek();
+        if (std::isspace(peek)) {
+            file.get();
+            continue;
+        }
+        if (file.peek() == '#') {
+            // comment, ignore until end of line
+            std::string comment;
+            std::getline(file, comment);
+            continue;
+        }
+        switch (phase) {
+            case 0:  // read width
+                file >> width;
+                phase = 1;
+                break;
+            case 1:  // read height
+                file >> height;
+                image.resize(width, height);
+                phase = 2;
+                break;
+            case 2:  // read color depth
+                file >> depth;
+                x = y = c = 0;
+                phase = 3;
+                break;
+            case 3:  // read color values
+                uint32_t v;
+                file >> v;
+                if constexpr (std::is_floating_point_v<typename T::type>) {
+                    image(x, y)[c++] = v / (float)depth;
+                } else {
+                    image(x, y)[c++] = 255 * v / (float)depth;
+                }
+
+                if (c == channels) {  // next column
+                    c = 0;
+                    x += 1;
+                }
+                if (x == width) {  // next row
+                    x = 0;
+                    y += 1;
+                }
+                if (y == height) phase = -1;  // finished
+                break;
+        }
+    }
+
+    if (file.eof())
+        throw detail::CommonBitmapException(
+            "PPM Unexpected error: EOF after reading all data?");
+    char next;
+    do {
+        next = file.get();
+    } while (next != EOF || std::isspace(next));
+    if (next != EOF || !file.eof())
+        throw detail::CommonBitmapException(
+            "PPM Unexpected error: EOF not reached even after reading all "
+            "data?");
+
+    return image;
+}
 
 template <typename T>
 void save_ppm(std::ofstream& file, const Grid2D<T>& image) {

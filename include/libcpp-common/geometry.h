@@ -25,11 +25,21 @@ class Vec : public std::array<T, N> {
     using type = T;
     static constexpr unsigned int size = N;
 
-    Vec(T x = 0) : std::array<T, N>() { Base::fill(x); }
+    // fill the vector with the same element (defaults to 0 initialization)
+    constexpr Vec(T x = 0) : Base() { Base::fill(x); }
+    // fill the vector with N elements e.g. Vec3f(1,2,3)
     template <typename... Args,
               typename = std::enable_if_t<sizeof...(Args) == N>>
-    Vec(Args&&... args)
-        : std::array<T, N>{static_cast<T>(std::forward<Args>(args))...} {}
+    constexpr Vec(Args&&... args)
+        : Base{static_cast<T>(std::forward<Args>(args))...} {}
+    // convert from vec3 to vec4
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    constexpr Vec(const Vec<T, 3>& v, T w = 0) : Base{v.x(), v.y(), v.z(), w} {}
+    // convert from vec4 to vec3
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    constexpr Vec<T, 3> xyz() const {
+        return Vec<T, 3>(this->x(), this->y(), this->z());
+    }
 
     constexpr T& x() { return (*this)[0]; }
     constexpr const T& x() const { return (*this)[0]; }
@@ -182,20 +192,12 @@ constexpr T dot(const Vec<T, N>& u, const Vec<T, N>& v) {
     return result;
 }
 
-template <typename T>
-constexpr Vec<T, 3> cross(const Vec<T, 3>& u, const Vec<T, 3>& v) {
-    Vec<T, 3> result{u.y() * v.z() - u.z() * v.y(),
+template <typename T, unsigned int N,
+          typename = std::enable_if_t<N == 3 || N == 4>>
+constexpr Vec<T, N> cross(const Vec<T, N>& u, const Vec<T, N>& v) {
+    return Vec<T, N>{u.y() * v.z() - u.z() * v.y(),
                      u.z() * v.x() - u.x() * v.z(),
                      u.x() * v.y() - u.y() * v.x()};
-    return result;
-}
-
-template <typename T>
-constexpr Vec<T, 4> cross(const Vec<T, 4>& u, const Vec<T, 4>& v) {
-    Vec<T, 4> result{u.y() * v.z() - u.z() * v.y(),
-                     u.z() * v.x() - u.x() * v.z(),
-                     u.x() * v.y() - u.y() * v.x(), 0.0f};
-    return result;
 }
 
 using Vec2f = Vec<float, 2>;
@@ -268,8 +270,22 @@ template <typename T, unsigned int N>
 class Mat : public std::array<Vec<T, N>, N> {
    private:
     using Base = std::array<Vec<T, N>, N>;
+    constexpr inline Vec<T, N>& operator[](const size_t i) {
+        return Base::operator[](i);
+    };
 
    public:
+    using type = T;
+    static constexpr unsigned int size = N;
+
+    // fill the mat with the same element (defaults to 0 initialization)
+    constexpr Mat(T x = 0) : Base() { Base::fill(x); }
+    // N vecs constructor e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
+    template <typename... Vecs,
+              typename = std::enable_if_t<sizeof...(Vecs) == N>>
+    constexpr Mat(Vecs&&... vecs)
+        : Base{static_cast<Vec<T, N>>(std::forward<Vecs>(vecs))...} {}
+
     static constexpr Mat<T, N> identity() {
         Mat<T, N> result;
         for (int i = 0; i < N; ++i)
@@ -283,7 +299,6 @@ class Mat : public std::array<Vec<T, N>, N> {
     constexpr inline const T& operator()(const size_t i, const size_t j) const {
         return (*this).at(j).at(i);
     }
-    constexpr inline T& operator[](const size_t i) = delete;
 
     constexpr inline Mat<T, N> operator*(const Mat<T, N>& o) const {
         Mat<T, N> result;
@@ -339,10 +354,112 @@ class Mat : public std::array<Vec<T, N>, N> {
     }
 
     template <typename T2>
-    constexpr inline operator Mat<T2, N>() const {
+    inline Mat<T2, N> cast_to() const {
         Mat<T2, N> result;
         for (int i = 0; i < N; ++i)
             for (int j = 0; j < N; ++j) result(i, j) = (T2)((*this)(i, j));
+        return result;
+    }
+
+    // Mat3 / Mat4 specific operations
+
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static constexpr Mat<T, 4> translation(float x, float y, float z) {
+        return {0, 0, 0, x,  //
+                0, 0, 0, y,  //
+                0, 0, 0, z,  //
+                0, 0, 0, 1};
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static constexpr Mat<T, 4> rotation_X(float rad) {
+        return {1, 0,         0,          0,  //
+                0, cosf(rad), -sinf(rad), 0,  //
+                0, sinf(rad), cosf(rad),  0,  //
+                0, 0,         0,          1};
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static constexpr Mat<T, 4> rotation_Y(float rad) {
+        return {cosf(rad),  0, sinf(rad), 0,  //
+                0,          1, 0,         0,  //
+                -sinf(rad), 0, cosf(rad), 0,  //
+                0,          0, 0,         1};
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static constexpr Mat<T, 4> rotation_Z(float rad) {
+        return {cosf(rad), -sinf(rad), 0, 0,  //
+                sinf(rad), cosf(rad),  0, 0,  //
+                0,         0,          1, 0,  //
+                0,         0,          0, 1};
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static inline Mat<T, 4> rotation_axis_angle(Vec4f axis, float rad) {
+        float c = cosf(rad), mc = 1 - c;
+        float s = sinf(rad), ms = 1 - s;
+        float x = axis.x(), y = axis.y(), z = axis.z();
+        // https://en.wikipedia.org/wiki/Rotation_matrix
+        return Mat(c + x * x * mc, x * y * mc - z * s, x * z * mc + y * s, 0,
+                   y * x * mc + z * s, c + y * y * mc, y * z * mc - x * s, 0,
+                   z * x * mc - y * s, z * y * mc + x * s, c + z * z * mc, 0, 0,
+                   0, 0, 1);
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static constexpr Mat<T, 4> scale(T x, T y, T z) {
+        return {x, 0, 0, 0,  //
+                0, y, 0, 0,  //
+                0, 0, z, 0,  //
+                0, 0, 0, 1};
+    }
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    static inline Mat<T, 4> change_of_basis(const Vec<T, 4>& u,
+                                            const Vec<T, 4>& v,
+                                            const Vec<T, 4>& w,
+                                            const Vec<T, 4>& o) {
+        return Mat<T, 4>(u, v, w, o);
+    }
+
+   private:
+    // (row, col) cofactor of the matrix
+    // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    T cofactor(const size_t row, const size_t col) const {
+        // a, b and c are indices for accessing the 3x3 minor
+        // using the 4x4 original matrix
+        // for example, if row = 1 (second row) then the 3x3
+        // matrix is made from rows ax = 0, bx = 2 and cx = 3
+        int ax = row > 0 ? 0 : 1;
+        int bx = row > 1 ? 1 : 2;
+        int cx = row > 2 ? 2 : 3;
+        int ay = col > 0 ? 0 : 1;
+        int by = col > 1 ? 1 : 2;
+        int cy = col > 2 ? 2 : 3;
+        // determinant of 3x3 minor
+        float determinant =
+            (*this)(ay, ax) * (*this)(by, bx) * (*this)(cy, cx) +
+            (*this)(ay, bx) * (*this)(by, cx) * (*this)(cy, ax) +
+            (*this)(ay, cx) * (*this)(by, ax) * (*this)(cy, bx) -
+            (*this)(ay, cx) * (*this)(by, bx) * (*this)(cy, ax) -
+            (*this)(ay, ax) * (*this)(by, cx) * (*this)(cy, bx) -
+            (*this)(ay, bx) * (*this)(by, ax) * (*this)(cy, cx);
+        // cofactor calculation (see wikipedia link above)
+        float sign = ((row + col) % 2 == 0 ? 1.0f : -1.0f);
+        return sign * determinant;
+    }
+
+   public:
+    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    Mat<T, 4> inverse() const {
+        // for now, transposed adjugate, re-transposed at the end
+        Mat<T, 4> result;
+        for (int i = 0; i < 4; ++i)
+            for (int j = 0; j < 4; ++j) result(i, j) = cofactor(i, j);
+
+        // determinant of A using first row/col of A/adjugate
+        T determinant =
+            result(0, 0) * (*this)(0, 0) + result(0, 1) * (*this)(1, 0) +
+            result(0, 2) * (*this)(2, 0) + result(0, 3) * (*this)(3, 0);
+
+        // Minv = Madj / det(A)
+        result /= determinant;
         return result;
     }
 
@@ -371,132 +488,10 @@ class Mat : public std::array<Vec<T, N>, N> {
     }
 };
 
-template <typename T>
-class Mat3 : public Mat<T, 3> {
-   public:
-    constexpr Mat3(T x = 0) : Mat<T, 3>() {
-        for (int i = 0; i < 3; ++i) (*this).at(i).fill(x);
-    }
-    constexpr Mat3(const Vec<T, 3>& u, const Vec<T, 3>& v, const Vec<T, 3>& w,
-                   const Vec<T, 3>& o)
-        : Mat<T, 3>{u, v, w} {}
-    constexpr Mat3(T a, T b, T c, T d, T e, T f, T g, T h, T i)
-        : Mat<T, 3>{Vec<T, 3>{a, d, g}, Vec<T, 3>{b, e, h},
-                    Vec<T, 3>{c, f, i}} {}
-    constexpr Mat3(const Mat<T, 3>&& m) : Mat<T, 3>(m) {}
-};
+using Mat3f = Mat<float, 3>;
+using Mat3i = Mat<int, 3>;
+using Mat3u = Mat<unsigned int, 3>;
 
-template <typename T>
-class Mat4 : public Mat<T, 4> {
-   public:
-    constexpr Mat4(T x = 0) : Mat<T, 4>() {
-        for (int i = 0; i < 4; ++i) (*this).at(i).fill(x);
-    }
-    constexpr Mat4(const Vec<T, 4>& u, const Vec<T, 4>& v, const Vec<T, 4>& w,
-                   const Vec<T, 4>& o)
-        : Mat<T, 4>{u, v, w, o} {}
-    constexpr Mat4(T a, T b, T c, T d, T e, T f, T g, T h, T i, T j, T k, T l,
-                   T m, T n, T o, T p)
-        : Mat<T, 4>{Vec<T, 4>{a, e, i, m}, Vec<T, 4>{b, f, j, n},
-                    Vec<T, 4>{c, g, k, o}, Vec<T, 4>{d, h, l, p}} {}
-    constexpr Mat4(const Mat<T, 4>&& m) : Mat<T, 4>(m) {}
-
-    static constexpr Mat4<T> translation(float x, float y, float z) {
-        return {0, 0, 0, x,  //
-                0, 0, 0, y,  //
-                0, 0, 0, z,  //
-                0, 0, 0, 1};
-    }
-    static constexpr Mat4<T> rotation_X(float rad) {
-        return {1, 0,         0,          0,  //
-                0, cosf(rad), -sinf(rad), 0,  //
-                0, sinf(rad), cosf(rad),  0,  //
-                0, 0,         0,          1};
-    }
-    static constexpr Mat4<T> rotation_Y(float rad) {
-        return {cosf(rad),  0, sinf(rad), 0,  //
-                0,          1, 0,         0,  //
-                -sinf(rad), 0, cosf(rad), 0,  //
-                0,          0, 0,         1};
-    }
-    static constexpr Mat4<T> rotation_Z(float rad) {
-        return {cosf(rad), -sinf(rad), 0, 0,  //
-                sinf(rad), cosf(rad),  0, 0,  //
-                0,         0,          1, 0,  //
-                0,         0,          0, 1};
-    }
-    static inline Mat4<T> rotation_axis_angle(Vec4f axis, float rad) {
-        float c = cosf(rad), mc = 1 - c;
-        float s = sinf(rad), ms = 1 - s;
-        float x = axis.x(), y = axis.y(), z = axis.z();
-        // https://en.wikipedia.org/wiki/Rotation_matrix
-        return Mat4(c + x * x * mc, x * y * mc - z * s, x * z * mc + y * s, 0,
-                    y * x * mc + z * s, c + y * y * mc, y * z * mc - x * s, 0,
-                    z * x * mc - y * s, z * y * mc + x * s, c + z * z * mc, 0,
-                    0, 0, 0, 1);
-    }
-    static constexpr Mat4<T> scale(T x, T y, T z) {
-        return {x, 0, 0, 0,  //
-                0, y, 0, 0,  //
-                0, 0, z, 0,  //
-                0, 0, 0, 1};
-    }
-    static inline Mat4<T> change_of_basis(const Vec<T, 4>& u,
-                                          const Vec<T, 4>& v,
-                                          const Vec<T, 4>& w,
-                                          const Vec<T, 4>& o) {
-        return Mat4<T>(u, v, w, o);
-    }
-
-   private:
-    // (row, col) cofactor of the matrix
-    // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
-    T cofactor(const size_t row, const size_t col) const {
-        // a, b and c are indices for accessing the 3x3 minor
-        // using the 4x4 original matrix
-        // for example, if row = 1 (second row) then the 3x3
-        // matrix is made from rows ax = 0, bx = 2 and cx = 3
-        int ax = row > 0 ? 0 : 1;
-        int bx = row > 1 ? 1 : 2;
-        int cx = row > 2 ? 2 : 3;
-        int ay = col > 0 ? 0 : 1;
-        int by = col > 1 ? 1 : 2;
-        int cy = col > 2 ? 2 : 3;
-        // determinant of 3x3 minor
-        float determinant =
-            (*this)(ay, ax) * (*this)(by, bx) * (*this)(cy, cx) +
-            (*this)(ay, bx) * (*this)(by, cx) * (*this)(cy, ax) +
-            (*this)(ay, cx) * (*this)(by, ax) * (*this)(cy, bx) -
-            (*this)(ay, cx) * (*this)(by, bx) * (*this)(cy, ax) -
-            (*this)(ay, ax) * (*this)(by, cx) * (*this)(cy, bx) -
-            (*this)(ay, bx) * (*this)(by, ax) * (*this)(cy, cx);
-        // cofactor calculation (see wikipedia link above)
-        float sign = ((row + col) % 2 == 0 ? 1.0f : -1.0f);
-        return sign * determinant;
-    }
-
-   public:
-    Mat4<T> inverse() const {
-        // for now, transposed adjugate, re-transposed at the end
-        Mat4<T> result;
-        for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 4; ++j) result(i, j) = cofactor(i, j);
-
-        // determinant of A using first row/col of A/adjugate
-        T determinant =
-            result(0, 0) * (*this)(0, 0) + result(0, 1) * (*this)(1, 0) +
-            result(0, 2) * (*this)(2, 0) + result(0, 3) * (*this)(3, 0);
-
-        // Minv = Madj / det(A)
-        result /= determinant;
-        return result;
-    }
-};
-
-using Mat3f = Mat3<float>;
-using Mat3i = Mat3<int>;
-using Mat3u = Mat3<unsigned int>;
-
-using Mat4f = Mat4<float>;
-using Mat4i = Mat4<int>;
-using Mat4u = Mat4<unsigned int>;
+using Mat4f = Mat<float, 4>;
+using Mat4i = Mat<int, 4>;
+using Mat4u = Mat<unsigned int, 4>;
