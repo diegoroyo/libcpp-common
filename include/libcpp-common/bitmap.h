@@ -163,10 +163,10 @@ struct bitmap_channels<unsigned int> : std::integral_constant<uint8_t, 1> {};
 /// LOAD / SAVE ///
 
 template <typename T>
-Grid2D<T> bitmap_load(const std::string& filename);
+Grid2D<T> load_bitmap(const std::string& filename);
 
 template <typename T>
-void bitmap_save(const std::string& filename, const Grid2D<T>& image);
+void save_bitmap(const std::string& filename, const Grid2D<T>& image);
 
 };  // namespace common
 

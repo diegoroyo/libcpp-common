@@ -21,6 +21,6 @@ struct Mesh {
     VecList3u faces;
 };
 
-Mesh mesh_load(const char* filename);
+Mesh load_mesh(const char* filename);
 
 };  // namespace common

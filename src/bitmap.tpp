@@ -14,7 +14,7 @@ template <typename T>
 struct bitmap_channels;
 
 template <typename T>
-Grid2D<T> bitmap_load(const std::string& filename) {
+Grid2D<T> load_bitmap(const std::string& filename) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
     static_assert(channels > 0,
                   "Invalid bitmap type to load. It must be one of: float, "
@@ -34,7 +34,7 @@ Grid2D<T> bitmap_load(const std::string& filename) {
 }
 
 template <typename T>
-void bitmap_save(const std::string& filename, const Grid2D<T>& image) {
+void save_bitmap(const std::string& filename, const Grid2D<T>& image) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
     static_assert(channels > 0,
                   "Invalid bitmap type to load. It must be one of: float, "

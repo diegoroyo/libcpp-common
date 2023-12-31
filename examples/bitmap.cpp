@@ -4,7 +4,7 @@
 
 int main() {
     common::Bitmap4f image =
-        common::bitmap_load<Color4f>("/home/diego/desarrollo/cpp/grid.png");
+        common::load_bitmap<Color4f>("/home/diego/desarrollo/cpp/grid.png");
 
     for (size_t y = 0; y < image.height(); ++y) {
         for (size_t x = 0; x < image.width(); ++x) {

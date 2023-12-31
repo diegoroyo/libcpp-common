@@ -9,7 +9,7 @@
 
 namespace common {
 
-Mesh mesh_load(const char* filename) {
+Mesh load_mesh(const char* filename) {
     std::ifstream file(filename);
 
     if (!file.is_open())
