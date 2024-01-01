@@ -11,3 +11,4 @@ A collection of C++ files I typically use in my projects
     * PPM format (only RGB images i.e. `common::Bitmap3f` or `common::Bitmap3u` up to 32-bit precision)
   * Saving:
     * PPM format (only RGB images i.e. `common::Bitmap3f` or `common::Bitmap3u` with 8-bit precision)
+* `test.h`: Simple test framework. See `tests` folder for some examples.
