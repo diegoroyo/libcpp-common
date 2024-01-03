@@ -153,6 +153,119 @@ using Bitmap1u = Grid2D<unsigned int>;
 using Bitmap3u = Grid2D<Color3u>;
 using Bitmap4u = Grid2D<Color4u>;
 
+/// GRID3D / BITMAPLIST ///
+
+// just handles temporal (new vector) dimension, Grid2D handles the other two
+template <typename T>
+class Grid3D : public std::vector<Grid2D<T>> {
+   private:
+    using Base = std::vector<Grid2D<T>>;
+    size_t m_width, m_height, m_depth;
+    bool m_repeat;
+
+    constexpr inline std::vector<T>& operator[](const size_t i) {
+        return Base::operator[](i);
+    };
+
+    // allows for numpy-like indexing (e.g. -1 is last pixel)
+    inline void idx(int& t) const {
+        if (!m_repeat && (t < 0 || t >= m_depth))
+            throw detail::CommonBitmapException(
+                "Invalid index " + std::to_string(t) + " in depth dimension.");
+
+        t = (t >= 0) ? (t % m_depth)  //
+                     : (m_depth - 1 + ((t + 1) % (int)m_depth));
+    }
+
+   public:
+    using Base::Base;
+    Grid3D(bool repeat = true)
+        : m_depth(0), m_width(0), m_height(0), m_repeat(repeat), Base() {}
+    Grid3D(size_t width, size_t height, size_t depth, const T& value = 0,
+           bool repeat = true)
+        : m_width(width), m_height(height), m_depth(depth), Base() {
+        this->resize(width, height, depth, value);
+        set_repeat(repeat);
+    }
+    void set_repeat(bool repeat) {
+        m_repeat = repeat;
+        for (auto& frame : *this) frame.set_repeat(repeat);
+    }
+
+    void resize(size_t width, size_t height, size_t depth, const T& value = 0) {
+        m_width = width;
+        m_height = height;
+        m_depth = depth;
+        Base::resize(depth);
+        for (auto& frame : *this) {
+            frame.resize(width, height, value);
+        }
+    }
+
+    void fill(const T& value) {
+        for (auto& frame : *this) frame.fill(value);
+    }
+
+    // This alternative does not use templated functions so that
+    // reduce_f's signature is visible to the user
+    template <typename Result>
+    Result reduce(Result initial_value,
+                  Result (*const reduce_f)(Result, const T&)) const {
+        return reduce(initial_value, reduce_f);
+    }
+    template <typename Result, typename ReduceFunc>
+    Result reduce(Result initial_value, const ReduceFunc& reduce_f) const {
+        for (auto& frame : *this)
+            initial_value =
+                frame.template reduce<Result>(initial_value, reduce_f);
+
+        return initial_value;
+    }
+
+    Grid2D<T> reduce_depth(T initial_value,
+                           T (*const reduce_f)(T, const T&)) const {
+        return reduce_depth(initial_value, reduce_f);
+    }
+    template <typename ReduceFunc>
+    Grid2D<T> reduce_depth(T initial_value, const ReduceFunc& reduce_f) const {
+        Grid2D<T> result(m_width, m_height, initial_value);
+        for (size_t z = 0; z < m_depth; ++z)
+            for (size_t y = 0; y < m_height; ++y)
+                for (size_t x = 0; x < m_width; ++x)
+                    result(x, y) = reduce_f(result(x, y), (*this)(x, y, z));
+
+        return result;
+    }
+
+    inline size_t width() const { return m_width; }
+    inline size_t height() const { return m_height; }
+    inline size_t depth() const { return m_depth; }
+    inline Vec3u size() const { return Vec3u(m_width, m_height, m_depth); }
+
+    constexpr inline T& operator()(int i, int j, int t) {
+        idx(t);
+        return (*this).at(t)(i, j);
+    }
+    constexpr inline const T& operator()(int i, int j, int t) const {
+        idx(t);
+        return (*this).at(t)(i, j);
+    }
+    constexpr inline T& operator()(const Vec3i& ijt) {
+        return (*this)(ijt.x(), ijt.y(), ijt.z());
+    }
+    constexpr inline const T& operator()(const Vec3i& ijt) const {
+        return (*this)(ijt.x(), ijt.y(), ijt.z());
+    }
+};
+
+using BitmapList1f = Grid3D<float>;
+using BitmapList3f = Grid3D<Color3f>;
+using BitmapList4f = Grid3D<Color4f>;
+
+using BitmapList1u = Grid3D<unsigned int>;
+using BitmapList3u = Grid3D<Color3u>;
+using BitmapList4u = Grid3D<Color4u>;
+
 template <typename T>
 struct bitmap_channels : std::integral_constant<uint8_t, T::size> {};
 template <>

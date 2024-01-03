@@ -32,6 +32,9 @@ class Vec : public std::array<T, N> {
               typename = std::enable_if_t<sizeof...(Args) == N>>
     constexpr Vec(Args&&... args)
         : Base{static_cast<T>(std::forward<Args>(args))...} {}
+    // convert from vec2 to vec3
+    template <unsigned int M = N, typename = std::enable_if_t<M == 3>>
+    constexpr Vec(const Vec<T, 2>& v, T z = 0) : Base{v.x(), v.y(), z} {}
     // convert from vec3 to vec4
     template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
     constexpr Vec(const Vec<T, 3>& v, T w = 0) : Base{v.x(), v.y(), v.z(), w} {}
@@ -39,6 +42,11 @@ class Vec : public std::array<T, N> {
     template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
     constexpr Vec<T, 3> xyz() const {
         return Vec<T, 3>(this->x(), this->y(), this->z());
+    }
+    // convert from vec3/4 to vec2
+    template <unsigned int M = N, typename = std::enable_if_t<M == 3 || M == 4>>
+    constexpr Vec<T, 2> xy() const {
+        return Vec<T, 2>(this->x(), this->y());
     }
 
     constexpr T& x() { return (*this)[0]; }

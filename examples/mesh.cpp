@@ -4,7 +4,7 @@
 
 int main() {
     common::Mesh mesh =
-        common::mesh_load("/home/diego/desarrollo/cpp/quad.ply");
+        common::load_mesh("/home/diego/desarrollo/cpp/quad.ply");
 
     std::cout << mesh.vertices << std::endl;
     std::cout << mesh.faces << std::endl;
