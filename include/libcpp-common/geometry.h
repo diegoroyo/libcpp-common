@@ -256,9 +256,9 @@ class VecList : public std::vector<Vec<T, N>> {
     }
 
     friend std::ostream& operator<<(std::ostream& s, const VecList<T, N>& a) {
-        s << "[" << std::endl;
+        s << "[\n";
         for (int k = 0; k < a.Base::size(); ++k)
-            s << "  " << k << ": " << a[k] << std::endl;
+            s << "  " << k << ": " << a[k] << "\n";
         s << "]";
         return s;
     }
@@ -486,11 +486,11 @@ class Mat : public std::array<Vec<T, N>, N> {
             s << v(i, N - 1);
 
             if (i == 0)
-                s << " \\" << std::endl;
+                s << " \\\n";
             else if (i == N - 1)
-                s << " /" << std::endl;
+                s << " /\n";
             else
-                s << " |" << std::endl;
+                s << " |\n";
         }
         return s;
     }
