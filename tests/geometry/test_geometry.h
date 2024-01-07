@@ -31,7 +31,16 @@ TEST_CASE(00_type_size, {
     TEST_TRUE(Vec4f::size == 4);
 })
 
-TEST_CASE_VEC234(01_constructor_zero_or_one_value, {
+COMPILE_TIME_TEST(Vec2f)
+
+TEST_CASE(01_constructors, {
+    TEST_TRUE(Vec2f_compiles_from_type<Vec2f, float, float>);
+    TEST_TRUE(Vec2f_compiles_from_type<Vec2f, int, float>);
+    TEST_TRUE(!Vec2f_compiles_from_type<Vec2f, std::string, float, float>);
+    TEST_TRUE(!Vec2f_compiles_from_type<Vec2f, std::string, float>);
+})
+
+TEST_CASE_VEC234(02_constructor_zero_or_one_value, {
     T zero;
     for (const auto& x : zero) {
         TEST_TRUE(zero == 0);
@@ -42,7 +51,7 @@ TEST_CASE_VEC234(01_constructor_zero_or_one_value, {
     }
 })
 
-TEST_CASE(02_constructor_n_values, {
+TEST_CASE(03_constructor_n_values, {
     Vec2i v2(1, 2);
     Vec3i v3(1, 2, 3);
     Vec4i v4(1, 2, 3, 4);
@@ -53,7 +62,7 @@ TEST_CASE(02_constructor_n_values, {
     for (int i = 1; i <= 10; ++i) TEST_TRUE(v10[i] = i);
 })
 
-TEST_CASE(03_conversion_vec3_vec4, {
+TEST_CASE(04_conversion_vec3_vec4, {
     Vec3f v3(1, 2, 3);
     Vec4f v4_zero(v3);
     Vec4f v4_custom(v3, 4);
