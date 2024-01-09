@@ -28,8 +28,9 @@ class Vec : public std::array<T, N> {
     // fill the vector with the same element (defaults to 0 initialization)
     constexpr Vec(T x = 0) : Base() { Base::fill(x); }
     // fill the vector with N elements e.g. Vec3f(1,2,3)
-    template <typename... Args,
-              typename = std::enable_if_t<sizeof...(Args) == N>>
+    template <typename... Args, typename = std::enable_if_t<
+                                    sizeof...(Args) == N &&
+                                    (std::is_convertible_v<Args, T> && ...)>>
     constexpr Vec(Args&&... args)
         : Base{static_cast<T>(std::forward<Args>(args))...} {}
     // convert from vec2 to vec3
@@ -81,67 +82,37 @@ class Vec : public std::array<T, N> {
             if ((*this)[i] != o[i]) return false;
         return true;
     }
-    constexpr inline Vec<T, N> operator+(const T v) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] + v;
-        return result;
+
+#define COMMON_op_impl(o)                                                      \
+    constexpr inline Vec<T, N> operator o(const T v) const noexcept {          \
+        Vec<T, N> result;                                                      \
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] o v;       \
+        return result;                                                         \
+    }                                                                          \
+    constexpr inline void operator o##=(const T v) noexcept {                  \
+        for (unsigned int i = 0; i < N; ++i) (*this)[i] o## = v;               \
+    }                                                                          \
+    constexpr inline Vec<T, N> operator o(const Vec<T, N>& v) const noexcept { \
+        Vec<T, N> result;                                                      \
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] o v[i];    \
+        return result;                                                         \
+    }                                                                          \
+    constexpr inline void operator o##=(const Vec<T, N>& v) noexcept {         \
+        for (unsigned int i = 0; i < N; ++i) (*this)[i] o## = v[i];            \
     }
-    constexpr inline void operator+=(const T v) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] += v;
-    }
-    constexpr inline Vec<T, N> operator+(const Vec<T, N>& o) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] + o[i];
-        return result;
-    }
-    constexpr inline void operator+=(const Vec<T, N>& o) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] += o[i];
-    }
+    COMMON_op_impl(+);
+    COMMON_op_impl(-);
+    COMMON_op_impl(*);
+    COMMON_op_impl(/);
+#undef COMMON_op_impl
+
+    // Note that it has no parameters e.g. "-v"
     constexpr inline Vec<T, N> operator-() const noexcept {
         Vec<T, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = -(*this)[i];
         return result;
     }
-    constexpr inline Vec<T, N> operator-(const T v) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] - v;
-        return result;
-    }
-    constexpr inline void operator-=(const T v) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] -= v;
-    }
-    constexpr inline Vec<T, N> operator-(const Vec<T, N>& o) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] - o[i];
-        return result;
-    }
-    constexpr inline void operator-=(const Vec<T, N>& o) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] -= o[i];
-    }
-    constexpr inline Vec<T, N> operator*(const T v) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * v;
-        return result;
-    }
-    constexpr inline void operator*=(const T f) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] *= f;
-    }
-    constexpr inline Vec<T, N> operator*(const Vec<T, N>& o) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * o[i];
-        return result;
-    }
-    constexpr inline void operator*=(const Vec<T, N>& o) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] *= o[i];
-    }
-    constexpr inline Vec<T, N> operator/(const T v) const noexcept {
-        Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] / v;
-        return result;
-    }
-    constexpr inline void operator/=(const T v) noexcept {
-        for (unsigned int i = 0; i < N; ++i) (*this)[i] /= v;
-    }
+
     constexpr inline T module2() const noexcept {
         T result = 0;
         for (unsigned int i = 0; i < N; ++i) result += (*this)[i] * (*this)[i];
@@ -161,6 +132,16 @@ class Vec : public std::array<T, N> {
         for (unsigned int i = 0; i < N; ++i)
             current_max = std::max(current_max, (*this)[i]);
         return current_max;
+    }
+    constexpr inline Vec<T, N> floor() const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = std::floor((*this)[i]);
+        return result;
+    }
+    constexpr inline Vec<T, N> ceil() const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = std::ceil((*this)[i]);
+        return result;
     }
 
     template <typename T2>
@@ -290,7 +271,9 @@ class Mat : public std::array<Vec<T, N>, N> {
     constexpr Mat(T x = 0) : Base() { Base::fill(x); }
     // N vecs constructor e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
     template <typename... Vecs,
-              typename = std::enable_if_t<sizeof...(Vecs) == N>>
+              typename = std::enable_if_t<
+                  sizeof...(Vecs) == N &&
+                  (std::is_convertible_v<Vecs, Vec<T, N>> && ...)>>
     constexpr Mat(Vecs&&... vecs)
         : Base{static_cast<Vec<T, N>>(std::forward<Vecs>(vecs))...} {}
 

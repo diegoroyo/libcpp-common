@@ -14,6 +14,33 @@
 namespace common {
 namespace test {
 
+/// Extracted from
+/// https://stackoverflow.com/questions/7282350/how-to-unit-test-deliberate-compilation-errors-of-template-code
+/// Main idea: outside a test write
+/// COMPILE_TIME_TEST(func) with the name of func you want to test
+/// Then, if that function accepts parameters use func_compiles_from_type
+/// otherwise use func_compiles
+#define COMPILE_TIME_TEST(func) COMPILE_TIME_TEST_FUNCTION(func, func)
+#define COMPILE_TIME_TEST_FUNCTION(name, func)                                 \
+    namespace detail {                                                         \
+    template <typename R, auto... args>                                        \
+    struct name##FromArgs : std::false_type {};                                \
+    template <auto... args>                                                    \
+    struct name##FromArgs<decltype(func(args...)), args...> : std::true_type { \
+    };                                                                         \
+    template <typename R, typename... Args>                                    \
+    struct name##FromType : std::false_type {};                                \
+    template <typename... Args>                                                \
+    struct name##FromType<decltype(func(std::declval<Args>()...)), Args...>    \
+        : std::true_type {};                                                   \
+    };                                                                         \
+    template <typename R, auto... Args>                                        \
+    static constexpr auto name##_compiles =                                    \
+        detail::name##FromArgs<R, Args...>::value;                             \
+    template <typename... Args>                                                \
+    static constexpr auto name##_compiles_from_type =                          \
+        detail::name##FromType<Args...>::value;
+
 // test conditions
 #define _TEST_FAIL                                         \
     {                                                      \
@@ -45,7 +72,7 @@ void test_register(std::string file, const std::string &function_name,
 
 #define TEST_CASE(name, ...)                                          \
     bool test##name() {                                               \
-        bool _current_test_ok = true;                                 \
+        bool _current_test_ok = true; /* FIXME */                     \
         __VA_ARGS__;                                                  \
         return _current_test_ok;                                      \
     }                                                                 \
