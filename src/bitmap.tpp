@@ -48,6 +48,7 @@ void save_bitmap(const std::string& filename, const Grid2D<T>& image) {
         view.compare(view.size() - strlen(t), strlen(t), t) == 0
 
         if (COMMON_ends_with(".ppm")) return save_ppm(file, image);
+        if (COMMON_ends_with(".npy")) return save_npy(file, image);
 
 #undef COMMON_ends_with
 

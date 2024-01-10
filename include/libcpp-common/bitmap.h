@@ -14,6 +14,7 @@ template <typename T>
 class Grid2D;
 };
 
+#include "libcpp-common/bitmap/npy.h"
 #include "libcpp-common/bitmap/png.h"
 #include "libcpp-common/bitmap/ppm.h"
 #include "libcpp-common/color.h"
@@ -145,11 +146,11 @@ class Grid2D : protected std::vector<std::vector<T>> {
     }
 };
 
-using Bitmap1f = Grid2D<float>;
+using Bitmap1f = Grid2D<Color1f>;
 using Bitmap3f = Grid2D<Color3f>;
 using Bitmap4f = Grid2D<Color4f>;
 
-using Bitmap1u = Grid2D<unsigned int>;
+using Bitmap1u = Grid2D<Color1u>;
 using Bitmap3u = Grid2D<Color3u>;
 using Bitmap4u = Grid2D<Color4u>;
 
@@ -258,11 +259,11 @@ class Grid3D : public std::vector<Grid2D<T>> {
     }
 };
 
-using BitmapList1f = Grid3D<float>;
+using BitmapList1f = Grid3D<Color1f>;
 using BitmapList3f = Grid3D<Color3f>;
 using BitmapList4f = Grid3D<Color4f>;
 
-using BitmapList1u = Grid3D<unsigned int>;
+using BitmapList1u = Grid3D<Color1u>;
 using BitmapList3u = Grid3D<Color3u>;
 using BitmapList4u = Grid3D<Color4u>;
 

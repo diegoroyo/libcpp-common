@@ -82,6 +82,8 @@ class Color : public Vec<T, N> {
 #undef COMMON_color
 };
 
+using Color1f = Color<float, 1>;
+using Color1u = Color<unsigned int, 1>;
 using Color3f = Color<float, 3>;
 using Color3u = Color<unsigned int, 3>;
 using Color4f = Color<float, 4>;

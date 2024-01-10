@@ -4,7 +4,7 @@
 
 int main() {
     common::Bitmap4f image =
-        common::load_bitmap<Color4f>("/home/diego/desarrollo/cpp/grid.png");
+        common::load_bitmap<Color4f>("/home/diego/cpp/grid.png");
 
     for (size_t y = 0; y < image.height(); ++y) {
         for (size_t x = 0; x < image.width(); ++x) {
@@ -36,6 +36,8 @@ int main() {
         });
     std::cout << "Nonzero elements: " << std::to_string(count_nonzero)
               << std::endl;
+
+    common::save_bitmap("libcommon.npy", image);
 
     return 0;
 }

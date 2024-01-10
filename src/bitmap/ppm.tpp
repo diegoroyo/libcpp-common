@@ -109,11 +109,13 @@ Grid2D<T> load_ppm(std::ifstream& file) {
 
 template <typename T>
 void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
-    constexpr uint8_t channels = bitmap_channels<T>::value;
-    if constexpr (channels != 3)
-        throw detail::CommonBitmapException(
-            "PPM save only supports three-channel Bitmap objects");
+    throw detail::CommonBitmapException(
+        "PPM save only supports three-channel Bitmap objects");
+}
 
+template <typename T, typename = std::enable_if_t<T::size == 3>>
+void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
+    constexpr uint8_t channels = bitmap_channels<T>::value;
     size_t width = image.width();
     size_t height = image.height();
     float image_max;
