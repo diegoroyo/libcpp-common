@@ -26,9 +26,9 @@ void save_npy(std::ofstream& file, const Grid2D<T>& image) {
     size_t width = image.width();
     size_t height = image.height();
     std::string descr = "";
-    if (std::is_floating_point_v<typename T::type>) {
+    if constexpr (std::is_floating_point_v<typename T::type>) {
         descr = "<f4";
-    } else if (std::is_signed_v<typename T::type>) {
+    } else if constexpr (std::is_signed_v<typename T::type>) {
         descr = "<i4";
     } else {
         descr = "<u4";
@@ -47,8 +47,9 @@ void save_npy(std::ofstream& file, const Grid2D<T>& image) {
 
     file.write(reinterpret_cast<const char*>(magic), sizeof(magic));
     // write in little endian
-    char len_1 = header_len & 0xFF;
-    char len_2 = header_len >> 8;
+    uint16_t written_len = padded_len - sizeof(magic) - 2;
+    char len_1 = written_len & 0xFF;
+    char len_2 = written_len >> 8;
     file.write(&len_1, 1);
     file.write(&len_2, 1);
     file.write(header, header_len);
