@@ -109,13 +109,11 @@ Grid2D<T> load_ppm(std::ifstream& file) {
 
 template <typename T>
 void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
-    throw detail::CommonBitmapException(
-        "PPM save only supports three-channel Bitmap objects");
-}
-
-template <typename T, typename = std::enable_if_t<T::size == 3>>
-void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
+    if constexpr (channels != 3)
+        throw detail::CommonBitmapException(
+            "PPM save only supports three-channel Bitmap objects");
+
     size_t width = image.width();
     size_t height = image.height();
     float image_max;
@@ -124,10 +122,11 @@ void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
     } else {
         image_max = 255.0f;
     }
-    auto saved_image = image.template map<Color3u>([image_max](const T& e) {
-        return (e.template cast_to<float>() / image_max * 255.0f)
-            .template cast_to<unsigned int>();
-    });
+    auto saved_image = image.template map<Color<unsigned int, T::size>>(
+        [image_max](const T& e) {
+            return (e.template cast_to<float>() / image_max * 255.0f)
+                .template cast_to<unsigned int>();
+        });
 
 #define COMMON_write(t) \
     file.write(std::string(t).c_str(), std::string(t).size())
