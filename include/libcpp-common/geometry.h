@@ -14,6 +14,12 @@
 #include <type_traits>
 #include <vector>
 
+#define COMMON_VEC_IMPORT(Name, Base)                     \
+    using Base::Base;           /* import constructors */ \
+    Name(Base&& b) : Base(b) {} /* convert from Vec (Base) to custom class */
+
+namespace common {
+
 /// VECTOR ///
 
 template <typename T, unsigned int N>
@@ -164,14 +170,6 @@ class Vec : public std::array<T, N> {
         s << v[N - 1] << ")";
         return s;
     }
-};
-
-template <typename T, unsigned int N>
-struct std::tuple_size<Vec<T, N>> : std::integral_constant<std::size_t, N> {};
-
-template <std::size_t Index, typename T, unsigned int N>
-struct std::tuple_element<Index, Vec<T, N>> {
-    using type = T;
 };
 
 template <typename T, unsigned int N>
@@ -486,3 +484,14 @@ using Mat3u = Mat<unsigned int, 3>;
 using Mat4f = Mat<float, 4>;
 using Mat4i = Mat<int, 4>;
 using Mat4u = Mat<unsigned int, 4>;
+
+};  // namespace common
+
+template <typename T, unsigned int N>
+struct std::tuple_size<common::Vec<T, N>>
+    : std::integral_constant<std::size_t, N> {};
+
+template <std::size_t Index, typename T, unsigned int N>
+struct std::tuple_element<Index, common::Vec<T, N>> {
+    using type = T;
+};
