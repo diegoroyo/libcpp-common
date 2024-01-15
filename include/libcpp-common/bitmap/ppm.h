@@ -10,7 +10,6 @@
 #include <fstream>
 
 #include "libcpp-common/bitmap.h"
-#include "libcpp-common/color.h"
 
 namespace common {
 

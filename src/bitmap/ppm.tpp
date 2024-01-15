@@ -11,6 +11,9 @@
 
 namespace common {
 
+template <typename T, unsigned int N>
+class Color;
+
 template <typename T>
 struct bitmap_channels;
 
@@ -139,7 +142,7 @@ void save_ppm(std::ofstream& file, const Grid2D<T>& image) {
     COMMON_write("255\n");
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            const Color3u pixel = saved_image(x, y);
+            const auto pixel = saved_image(x, y);
             line = std::to_string(pixel.r()) + "\t" +  //
                    std::to_string(pixel.g()) + "\t" +  //
                    std::to_string(pixel.b());

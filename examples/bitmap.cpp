@@ -2,9 +2,12 @@
 
 #include <iostream>
 
+#include "libcpp-common/geometry.h"
+
+using namespace common;
+
 int main() {
-    common::Bitmap4f image =
-        common::load_bitmap<Color4f>("/media/pleiades/cpp/grid.png");
+    Bitmap4f image = load_bitmap<Color4f>("/media/pleiades/cpp/grid.png");
 
     for (size_t y = 0; y < image.height(); ++y) {
         for (size_t x = 0; x < image.width(); ++x) {
@@ -19,7 +22,7 @@ int main() {
     std::cout << Vec2i(0, 5) << ": " << image(0, 5) << std::endl;
     std::cout << Vec2i(0, -3) << ": " << image(0, -3) << std::endl;
 
-    common::Bitmap3f rgb = image.map<Color3f>([](const Color4f& in) -> Color3f {
+    Bitmap3f rgb = image.map<Color3f>([](const Color4f& in) -> Color3f {
         return Color3f(in.r(), in.g(), in.b());
     });
 
