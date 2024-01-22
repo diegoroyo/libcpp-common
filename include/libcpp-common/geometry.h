@@ -14,9 +14,12 @@
 #include <type_traits>
 #include <vector>
 
-#define COMMON_VEC_IMPORT(Name, Base)                     \
-    using Base::Base;           /* import constructors */ \
-    Name(Base&& b) : Base(b) {} /* convert from Vec (Base) to custom class */
+#define COMMON_VEC_IMPORT(Name, Base)                                        \
+    using Base::Base;          /* import constructors */                     \
+    Name(Base& b) : Base(b) {} /* convert from Vec (Base) to custom class */ \
+    Name(Base&& b) : Base(b) {}                                              \
+    Name(const Base& b) : Base(b) {}                                         \
+    Name(const Base&& b) : Base(b) {}
 
 namespace common {
 
@@ -128,10 +131,19 @@ class Vec : public std::array<T, N> {
     constexpr inline Vec<T, N> normalized(const T l = 1) const noexcept {
         static_assert(std::is_floating_point_v<T>,
                       "Type must be a floating point");
-        float mod = l / module();
+        float mod = module();
         Vec<T, N> result;
-        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * mod;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * l / mod;
         return result;
+    }
+    constexpr inline std::pair<float, Vec<T, N>> module_normalized(
+        const T l = 1) const noexcept {
+        static_assert(std::is_floating_point_v<T>,
+                      "Type must be a floating point");
+        float mod = module();
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] * l / mod;
+        return {mod, result};
     }
     constexpr inline T max() const noexcept {
         T current_max = 0;
@@ -147,6 +159,12 @@ class Vec : public std::array<T, N> {
     constexpr inline Vec<T, N> ceil() const noexcept {
         Vec<T, N> result;
         for (unsigned int i = 0; i < N; ++i) result[i] = std::ceil((*this)[i]);
+        return result;
+    }
+    template <typename AnyFunc>
+    constexpr inline bool any(const AnyFunc& f) const {
+        bool result = false;
+        for (unsigned int i = 0; i < N; ++i) result |= f((*this)[i]);
         return result;
     }
 

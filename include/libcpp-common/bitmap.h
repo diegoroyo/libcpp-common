@@ -312,13 +312,21 @@ class Grid3D : public std::vector<Grid2D<T>> {
     }
     template <typename ReduceFunc>
     Grid2D<T> reduce_depth(T initial_value, const ReduceFunc& reduce_f) const {
-        Grid2D<T> result(m_width, m_height, initial_value);
-        for (size_t z = 0; z < m_depth; ++z)
-            for (size_t y = 0; y < m_height; ++y)
-                for (size_t x = 0; x < m_width; ++x)
+        Grid2D<T> result(width(), height(), initial_value);
+        for (size_t z = 0; z < depth(); ++z)
+            for (size_t y = 0; y < height(); ++y)
+                for (size_t x = 0; x < width(); ++x)
                     result(x, y) = reduce_f(result(x, y), (*this)(x, y, z));
 
         return result;
+    }
+
+    void map_in_place(void (*const map_f)(T&)) { return map_in_place(map_f); }
+    template <typename MapFunction>
+    void map_in_place(const MapFunction& map_f) {
+        for (size_t z = 0; z < depth(); ++z)
+            for (size_t y = 0; y < height(); ++y)
+                for (size_t x = 0; x < width(); ++x) map_f((*this)(x, y, z));
     }
 
     inline size_t width() const { return m_width; }
