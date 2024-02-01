@@ -14,8 +14,11 @@
 #include <type_traits>
 #include <vector>
 
-#define COMMON_VEC_IMPORT(Name, Base)                                        \
-    using Base::Base;          /* import constructors */                     \
+#define COMMON_VEC_IMPORT(Name, Base)           \
+    using Base::Base; /* import constructors */ \
+    COMMON_VEC_IMPORT_COPY_MOVE(Name, Base)
+
+#define COMMON_VEC_IMPORT_COPY_MOVE(Name, Base)                              \
     Name(Base& b) : Base(b) {} /* convert from Vec (Base) to custom class */ \
     Name(Base&& b) : Base(b) {}                                              \
     Name(const Base& b) : Base(b) {}                                         \

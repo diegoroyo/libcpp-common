@@ -72,6 +72,11 @@ class Color : public Vec<T, N> {
         return (*this)[3];
     }
 
+    template <unsigned int M = N, typename = std::enable_if_t<M == 3>>
+    inline T luminance() const {
+        return 0.2126 * r() + 0.7152 * g() + 0.0722 * b();
+    }
+
     // convert color3 to color4
     template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
     Color(const Color<T, 3>& c, T a = 0)
