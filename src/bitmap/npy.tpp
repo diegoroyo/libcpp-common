@@ -5,6 +5,7 @@
  * Image saver with a format compatible with numpy's np.load(...)
  */
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <iostream>
 
@@ -19,20 +20,24 @@ struct bitmap_channels;
 template <typename T>
 void save_npy(std::ofstream& file, const Grid2D<T>& image) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
-    if constexpr (sizeof(typename T::type) != 4)
-        throw detail::CommonBitmapException(
-            "NPY save only supports Bitmaps where the underlying type is 4 "
-            "bytes long");
     size_t width = image.width();
     size_t height = image.height();
+    char element_size = 0;
     std::string descr = "";
-    if constexpr (std::is_floating_point_v<typename T::type>) {
+#define IS_TYPE(x) std::is_same_v<typename T::type, x>
+    if constexpr (IS_TYPE(std::complex<float>)) {
+        descr = "<c8";
+    } else if constexpr (IS_TYPE(float)) {
         descr = "<f4";
-    } else if constexpr (std::is_signed_v<typename T::type>) {
+    } else if constexpr (IS_TYPE(int)) {
         descr = "<i4";
-    } else {
+    } else if constexpr (IS_TYPE(unsigned int)) {
         descr = "<u4";
+    } else {
+        throw detail::CommonBitmapException(
+            "Unsupported data type for NPY save.");
     }
+#undef IS_TYPE
     const uint8_t magic[] = {0x93, 'N', 'U', 'M', 'P', 'Y', 0x01, 0x00};
     const std::string header_str = "{'descr': '" + descr + "', " +          //
                                    "'fortran_order': False, " +             //
@@ -60,12 +65,10 @@ void save_npy(std::ofstream& file, const Grid2D<T>& image) {
     for (size_t y = 0; y < image.height(); ++y) {
         for (size_t x = 0; x < image.width(); ++x) {
             for (size_t c = 0; c < channels; ++c) {
-                // store 4 bytes of float in little endian
-                const uint32_t p =
-                    *reinterpret_cast<const uint32_t*>(&image(x, y)[c]);
-                for (int b = 0; b < 4; ++b) {
-                    char v = (p >> b * 8) & 0xFF;
-                    file.write(&v, 1);
+                // store X bytes of float in little endian
+                const char* p = reinterpret_cast<const char*>(&image(x, y)[c]);
+                for (int b = 0; b < sizeof(typename T::type); ++b) {
+                    file.write(p++, 1);
                 }
             }
         }

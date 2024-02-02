@@ -86,7 +86,9 @@ class Color : public Vec<T, N> {
         : Color<T, 4>{r, g, b, std::is_floating_point_v<T> ? 1 : 255} {};
 
 #define COMMON_color(name, r, g, b)                                            \
-    static constexpr std::enable_if_t<N == 3 || N == 4, Color> name() {        \
+    template <unsigned int M = N,                                              \
+              typename = std::enable_if_t<M == 3 || M == 4>>                   \
+    static constexpr Color name() {                                            \
         return std::is_floating_point_v<T> ? Color(r, g, b)                    \
                                            : Color(r * 255, g * 255, b * 255); \
     }

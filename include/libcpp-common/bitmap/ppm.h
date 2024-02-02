@@ -20,7 +20,9 @@ template <typename T>
 Grid2D<T> load_ppm(std::ifstream& file);
 
 template <typename T>
-void save_ppm(std::ofstream& file, const Grid2D<T>& image);
+std::enable_if_t<bitmap_channels<T>::value == 3 &&
+                 !std::is_same_v<typename T::type, std::complex<float>>>
+save_ppm(std::ofstream& file, const Grid2D<T>& image);
 
 };  // namespace common
 
