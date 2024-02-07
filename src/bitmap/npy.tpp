@@ -39,10 +39,10 @@ void save_npy(std::ofstream& file, const Grid2D<T>& image) {
     }
 #undef IS_TYPE
     const uint8_t magic[] = {0x93, 'N', 'U', 'M', 'P', 'Y', 0x01, 0x00};
-    const std::string header_str = "{'descr': '" + descr + "', " +          //
-                                   "'fortran_order': False, " +             //
-                                   "'shape': (" + std::to_string(height) +  //
-                                   ", " + std::to_string(width) +           //
+    const std::string header_str = "{'descr': '" + descr + "', " +         //
+                                   "'fortran_order': False, " +            //
+                                   "'shape': (" + std::to_string(width) +  //
+                                   ", " + std::to_string(height) +         //
                                    ", " + std::to_string(channels) + "), }";
     const char* header = header_str.c_str();
     const uint16_t header_len = header_str.size();
@@ -62,8 +62,8 @@ void save_npy(std::ofstream& file, const Grid2D<T>& image) {
     for (int i = 0; i < padded_len - content_len; ++i) file.write(&space, 1);
     file.write(&newline, 1);
 
-    for (size_t y = 0; y < image.height(); ++y) {
-        for (size_t x = 0; x < image.width(); ++x) {
+    for (size_t x = 0; x < image.width(); ++x) {
+        for (size_t y = 0; y < image.height(); ++y) {
             for (size_t c = 0; c < channels; ++c) {
                 // store X bytes of float in little endian
                 const char* p = reinterpret_cast<const char*>(&image(x, y)[c]);
