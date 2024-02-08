@@ -25,3 +25,6 @@ target_link_libraries(mesh PRIVATE libcpp-common)
 
 add_executable(bitmap examples/bitmap.cpp)
 target_link_libraries(bitmap PRIVATE libcpp-common)
+
+add_executable(log examples/log.cpp)
+target_link_libraries(log PRIVATE libcpp-common)
