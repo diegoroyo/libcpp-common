@@ -2,8 +2,10 @@
 
 #include <iostream>
 
+using namespace common;
+
 int main() {
-    VecList4f list(3);
+    common::VecList4f list(3);
     list[0].x() = 6;
     list[0].y() = 4;
     list[0].z() = 2;

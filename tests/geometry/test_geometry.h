@@ -3,6 +3,8 @@
 #include "libcpp-common/geometry.h"
 #include "libcpp-common/test.h"
 
+using namespace common;
+
 #define TEMPLATE_TEST_CASE(name, code, class) \
     TEST_CASE(name##_##class, using T = class; code)
 #define TEST_CASE_VEC2(name, code)        \
@@ -42,11 +44,11 @@ TEST_CASE(01_constructors, {
 
 TEST_CASE_VEC234(02_constructor_zero_or_one_value, {
     T zero;
-    for (const auto& x : zero) {
+    for (const auto &x : zero) {
         TEST_TRUE(zero == 0);
     }
     T ten(10);
-    for (const auto& x : ten) {
+    for (const auto &x : ten) {
         TEST_TRUE(ten == 10);
     }
 })
