@@ -164,6 +164,11 @@ class Vec : public std::array<T, N> {
         for (unsigned int i = 0; i < N; ++i) result[i] = std::ceil((*this)[i]);
         return result;
     }
+    constexpr inline T sum() const noexcept {
+        T result;
+        for (unsigned int i = 0; i < N; ++i) result += (*this)[i];
+        return result;
+    }
     template <typename AnyFunc>
     constexpr inline bool any(const AnyFunc& f) const {
         bool result = false;
@@ -360,6 +365,23 @@ class Mat : public std::array<Vec<T, N>, N> {
         Mat<T, N> result;
         for (int i = 0; i < N; ++i)
             for (int j = 0; j < N; ++j) result(i, j) = (*this)(j, i);
+        return result;
+    }
+    // Sum all columns (not each column)
+    constexpr inline Mat<T, N> hsum() const {
+        Vec<T, N> result;
+        for (int i = 0; i < N; ++i) result += (*this)[i];
+        return result;
+    }
+    // Sum all rows (not each row)
+    constexpr inline Mat<T, N> vsum() const {
+        Vec<T, N> result;
+        for (int i = 0; i < N; ++i) result[i] = (*this)[i].sum();
+        return result;
+    }
+    constexpr inline Mat<T, N> sum() const {
+        T result;
+        for (int i = 0; i < N; ++i) result += (*this)[i].sum();
         return result;
     }
 
