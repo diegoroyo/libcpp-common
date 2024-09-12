@@ -331,6 +331,26 @@ class Mat : public std::array<Vec<T, N>, M> {
         return (*this).at(j).at(i);
     }
 
+    constexpr inline Mat<T, N, M> operator+(const Mat<T, N, M>& o) const {
+        Mat<T, N, M> result;
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) result(i, j) = (*this)(i, j) + o(i, j);
+        return result;
+    }
+    constexpr inline void operator+=(const Mat<T, N, M>& o) {
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) (*this)(i, j) += o(i, j);
+    }
+    constexpr inline Mat<T, N, M> operator-(const Mat<T, N, M>& o) const {
+        Mat<T, N, M> result;
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) result(i, j) = (*this)(i, j) - o(i, j);
+        return result;
+    }
+    constexpr inline void operator-=(const Mat<T, N, M>& o) {
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) (*this)(i, j) -= o(i, j);
+    }
     template <unsigned int U>
     constexpr inline Mat<T, N, U> operator*(const Mat<T, M, U>& o) const {
         Mat<T, N, U> result;
@@ -378,7 +398,7 @@ class Mat : public std::array<Vec<T, N>, M> {
             for (int j = 0; j < M; ++j) (*this)(i, j) /= f;
     }
 
-    constexpr inline Mat<T, N, M> transpose() const {
+    constexpr inline Mat<T, M, N> transpose() const {
         Mat<T, M, N> result;
         for (int i = 0; i < M; ++i)
             for (int j = 0; j < N; ++j) result(i, j) = (*this)(j, i);
@@ -523,9 +543,9 @@ class Mat : public std::array<Vec<T, N>, M> {
 
     friend std::ostream& operator<<(std::ostream& s, const Mat<T, N, M>& v) {
         for (int i = 0; i < N; ++i) {
-            if (i == 0)
+            if (i == 0 && N > 1)
                 s << "/ ";
-            else if (i == N - 1)
+            else if (i == N - 1 && N > 1)
                 s << "\\ ";
             else
                 s << "| ";
@@ -535,9 +555,9 @@ class Mat : public std::array<Vec<T, N>, M> {
             }
             s << v(i, M - 1);
 
-            if (i == 0)
+            if (i == 0 && N > 1)
                 s << " \\\n";
-            else if (i == N - 1)
+            else if (i == N - 1 && N > 1)
                 s << " /\n";
             else
                 s << " |\n";
