@@ -45,6 +45,15 @@ class Vec : public std::array<T, N> {
                                     (std::is_convertible_v<Args, T> && ...)>>
     constexpr Vec(Args&&... args)
         : Base{static_cast<T>(std::forward<Args>(args))...} {}
+    // fill the vector from an std::array
+   private:
+    template <std::size_t... I>
+    constexpr Vec(const std::array<T, N>& values, std::index_sequence<I...>)
+        : Vec(values[I]...) {}
+
+   public:
+    constexpr Vec(const std::array<T, N>& values)
+        : Vec(values, std::make_index_sequence<N>{}) {}
     // convert from vec2 to vec3
     template <unsigned int M = N, typename = std::enable_if_t<M == 3>>
     constexpr Vec(const Vec<T, 2>& v, T z = 0) : Base{v.x(), v.y(), z} {}
@@ -279,24 +288,31 @@ using VecList4u = VecList<unsigned int, 4>;
 
 /// MATRIX ///
 
-template <typename T, unsigned int N>
-class Mat : public std::array<Vec<T, N>, N> {
+template <typename T, unsigned int N, unsigned int M = N>
+class Mat : public std::array<Vec<T, N>, M> {
    private:
-    using Base = std::array<Vec<T, N>, N>;
+    using Base = std::array<Vec<T, N>, M>;
     constexpr inline Vec<T, N>& operator[](const size_t i) {
+        return Base::operator[](i);
+    };
+    constexpr inline const Vec<T, N>& operator[](const size_t i) const {
         return Base::operator[](i);
     };
 
    public:
     using type = T;
+    static constexpr unsigned int rows = N;
+    static constexpr unsigned int cols = M;
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == M2>>
     static constexpr unsigned int size = N;
 
     // fill the mat with the same element (defaults to 0 initialization)
     constexpr Mat(T x = 0) : Base() { Base::fill(x); }
-    // N vecs constructor e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
+    // M vecs constructor e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
     template <typename... Vecs,
               typename = std::enable_if_t<
-                  sizeof...(Vecs) == N &&
+                  sizeof...(Vecs) == M &&
                   (std::is_convertible_v<Vecs, Vec<T, N>> && ...)>>
     constexpr Mat(Vecs&&... vecs)
         : Base{static_cast<Vec<T, N>>(std::forward<Vecs>(vecs))...} {}
@@ -315,115 +331,121 @@ class Mat : public std::array<Vec<T, N>, N> {
         return (*this).at(j).at(i);
     }
 
-    constexpr inline Mat<T, N> operator*(const Mat<T, N>& o) const {
-        Mat<T, N> result;
-        for (int i = 0; i < N; ++i) result.at(i).fill(0);
+    template <unsigned int U>
+    constexpr inline Mat<T, N, U> operator*(const Mat<T, M, U>& o) const {
+        Mat<T, N, U> result;
+        for (int i = 0; i < U; ++i) result.at(i).fill(0);
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j)
-                for (int k = 0; k < N; ++k)
+            for (int j = 0; j < U; ++j)
+                for (int k = 0; k < M; ++k)
                     result(i, j) += (*this)(i, k) * o(k, j);
         return result;
     }
-    constexpr inline Mat<T, N> operator*(const T f) const {
-        Mat<T, N> result;
+    constexpr inline Mat<T, N, M> operator*(const T f) const {
+        Mat<T, N, M> result;
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) result(i, j) = (*this)(i, j) * f;
+            for (int j = 0; j < M; ++j) result(i, j) = (*this)(i, j) * f;
         return result;
     }
-    constexpr inline Vec<T, N> operator*(const Vec<T, N>& v) const {
+    constexpr inline Vec<T, N> operator*(const Vec<T, M>& v) const {
         Vec<T, N> result;
         result.fill(0);
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) result[i] += (*this)(i, j) * v[j];
+            for (int j = 0; j < M; ++j) result[i] += (*this)(i, j) * v[j];
         return result;
     }
-    constexpr inline VecList<T, N> operator*(const VecList<T, N>& a) const {
-        const size_t M = a.size();
-        VecList<T, N> result(M);
-        for (int k = 0; k < M; ++k)
+    constexpr inline VecList<T, N> operator*(const VecList<T, M>& a) const {
+        const size_t L = a.size();
+        VecList<T, N> result(L);
+        for (int k = 0; k < L; ++k)
             for (int i = 0; i < N; ++i)
-                for (int j = 0; j < N; ++j)
+                for (int j = 0; j < M; ++j)
                     result[k][i] += (*this)(i, j) * a[k][j];
         return result;
     }
     constexpr inline void operator*=(const T f) {
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) (*this)(i, j) *= f;
+            for (int j = 0; j < M; ++j) (*this)(i, j) *= f;
     }
-    constexpr inline Mat<T, N> operator/(const T f) const {
-        Mat<T, N> result;
+    constexpr inline Mat<T, N, M> operator/(const T f) const {
+        Mat<T, N, M> result;
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) result(i, j) = (*this)(i, j) * f;
+            for (int j = 0; j < M; ++j) result(i, j) = (*this)(i, j) * f;
         return result;
     }
     constexpr inline void operator/=(const T f) {
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) (*this)(i, j) /= f;
+            for (int j = 0; j < M; ++j) (*this)(i, j) /= f;
     }
 
-    constexpr inline Mat<T, N> transpose() const {
-        Mat<T, N> result;
-        for (int i = 0; i < N; ++i)
+    constexpr inline Mat<T, N, M> transpose() const {
+        Mat<T, M, N> result;
+        for (int i = 0; i < M; ++i)
             for (int j = 0; j < N; ++j) result(i, j) = (*this)(j, i);
         return result;
     }
     // Sum all columns (not each column)
-    constexpr inline Mat<T, N> hsum() const {
+    constexpr inline Vec<T, N> hsum() const {
         Vec<T, N> result;
-        for (int i = 0; i < N; ++i) result += (*this)[i];
+        for (int i = 0; i < M; ++i) result += (*this)[i];
         return result;
     }
     // Sum all rows (not each row)
-    constexpr inline Mat<T, N> vsum() const {
-        Vec<T, N> result;
-        for (int i = 0; i < N; ++i) result[i] = (*this)[i].sum();
+    constexpr inline Vec<T, M> vsum() const {
+        Vec<T, M> result;
+        for (int i = 0; i < M; ++i) result[i] = (*this)[i].sum();
         return result;
     }
-    constexpr inline Mat<T, N> sum() const {
+    constexpr inline T sum() const {
         T result;
-        for (int i = 0; i < N; ++i) result += (*this)[i].sum();
+        for (int i = 0; i < M; ++i) result += (*this)[i].sum();
         return result;
     }
 
     template <typename T2>
-    inline Mat<T2, N> cast_to() const {
-        Mat<T2, N> result;
+    inline Mat<T2, N, M> cast_to() const {
+        Mat<T2, N, M> result;
         for (int i = 0; i < N; ++i)
-            for (int j = 0; j < N; ++j) result(i, j) = (T2)((*this)(i, j));
+            for (int j = 0; j < M; ++j) result(i, j) = (T2)((*this)(i, j));
         return result;
     }
 
     // Mat3 / Mat4 specific operations
 
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static constexpr Mat<T, 4> translation(float x, float y, float z) {
         return {0, 0, 0, x,  //
                 0, 0, 0, y,  //
                 0, 0, 0, z,  //
                 0, 0, 0, 1};
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static constexpr Mat<T, 4> rotation_X(float rad) {
         return {1, 0,         0,          0,  //
                 0, cosf(rad), -sinf(rad), 0,  //
                 0, sinf(rad), cosf(rad),  0,  //
                 0, 0,         0,          1};
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static constexpr Mat<T, 4> rotation_Y(float rad) {
         return {cosf(rad),  0, sinf(rad), 0,  //
                 0,          1, 0,         0,  //
                 -sinf(rad), 0, cosf(rad), 0,  //
                 0,          0, 0,         1};
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static constexpr Mat<T, 4> rotation_Z(float rad) {
         return {cosf(rad), -sinf(rad), 0, 0,  //
                 sinf(rad), cosf(rad),  0, 0,  //
                 0,         0,          1, 0,  //
                 0,         0,          0, 1};
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static inline Mat<T, 4> rotation_axis_angle(Vec4f axis, float rad) {
         float c = cosf(rad), mc = 1 - c;
         float s = sinf(rad), ms = 1 - s;
@@ -434,14 +456,16 @@ class Mat : public std::array<Vec<T, N>, N> {
                    z * x * mc - y * s, z * y * mc + x * s, c + z * z * mc, 0, 0,
                    0, 0, 1);
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static constexpr Mat<T, 4> scale(T x, T y, T z) {
         return {x, 0, 0, 0,  //
                 0, y, 0, 0,  //
                 0, 0, z, 0,  //
                 0, 0, 0, 1};
     }
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     static inline Mat<T, 4> change_of_basis(const Vec<T, 4>& u,
                                             const Vec<T, 4>& v,
                                             const Vec<T, 4>& w,
@@ -452,7 +476,8 @@ class Mat : public std::array<Vec<T, N>, N> {
    private:
     // (row, col) cofactor of the matrix
     // https://en.wikipedia.org/wiki/Minor_(linear_algebra)
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     T cofactor(const size_t row, const size_t col) const {
         // a, b and c are indices for accessing the 3x3 minor
         // using the 4x4 original matrix
@@ -478,7 +503,8 @@ class Mat : public std::array<Vec<T, N>, N> {
     }
 
    public:
-    template <unsigned int M = N, typename = std::enable_if_t<M == 4>>
+    template <unsigned int N2 = N, unsigned int M2 = M,
+              typename = std::enable_if_t<N2 == 4 && M2 == 4>>
     Mat<T, 4> inverse() const {
         // for now, transposed adjugate, re-transposed at the end
         Mat<T, 4> result;
@@ -495,7 +521,7 @@ class Mat : public std::array<Vec<T, N>, N> {
         return result;
     }
 
-    friend std::ostream& operator<<(std::ostream& s, const Mat<T, N>& v) {
+    friend std::ostream& operator<<(std::ostream& s, const Mat<T, N, M>& v) {
         for (int i = 0; i < N; ++i) {
             if (i == 0)
                 s << "/ ";
@@ -504,10 +530,10 @@ class Mat : public std::array<Vec<T, N>, N> {
             else
                 s << "| ";
 
-            for (int j = 0; j < N - 1; ++j) {
+            for (int j = 0; j < M - 1; ++j) {
                 s << v(i, j) << " ";
             }
-            s << v(i, N - 1);
+            s << v(i, M - 1);
 
             if (i == 0)
                 s << " \\\n";
