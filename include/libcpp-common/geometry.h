@@ -10,6 +10,7 @@
 #include <math.h>
 
 #include <array>
+#include <functional>
 #include <ostream>
 #include <type_traits>
 #include <vector>
@@ -105,12 +106,12 @@ class Vec : public std::array<T, N> {
     }
 
 #define COMMON_op_impl(o)                                                      \
-    constexpr inline Vec<T, N> operator o(const T v) const noexcept {          \
+    constexpr inline Vec<T, N> operator o(const T& v) const noexcept {         \
         Vec<T, N> result;                                                      \
         for (unsigned int i = 0; i < N; ++i) result[i] = (*this)[i] o v;       \
         return result;                                                         \
     }                                                                          \
-    constexpr inline void operator o##=(const T v) noexcept {                  \
+    constexpr inline void operator o##=(const T& v) noexcept {                 \
         for (unsigned int i = 0; i < N; ++i) (*this)[i] o## = v;               \
     }                                                                          \
     constexpr inline Vec<T, N> operator o(const Vec<T, N>& v) const noexcept { \
@@ -134,6 +135,17 @@ class Vec : public std::array<T, N> {
         return result;
     }
 
+    constexpr inline Vec<T, N> ewise_mult(const Vec<T, N>& o) const {
+        Vec<T, N> result;
+        for (int i = 0; i < N; ++i) result[i] = (*this)[i] * o[i];
+        return result;
+    }
+    constexpr inline Vec<T, N> pow(const T& e) const noexcept {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i)
+            result[i] = std::pow((*this)[i], e);
+        return result;
+    }
     constexpr inline T module2() const noexcept {
         T result = 0;
         for (unsigned int i = 0; i < N; ++i) result += (*this)[i] * (*this)[i];
@@ -182,6 +194,12 @@ class Vec : public std::array<T, N> {
     constexpr inline bool any(const AnyFunc& f) const {
         bool result = false;
         for (unsigned int i = 0; i < N; ++i) result |= f((*this)[i]);
+        return result;
+    }
+    template <typename MapFunc>
+    constexpr inline Vec<T, N> map(const MapFunc& f) const {
+        Vec<T, N> result;
+        for (unsigned int i = 0; i < N; ++i) result[i] = f((*this)[i], i);
         return result;
     }
 
@@ -351,6 +369,13 @@ class Mat : public std::array<Vec<T, N>, M> {
         for (int i = 0; i < N; ++i)
             for (int j = 0; j < M; ++j) (*this)(i, j) -= o(i, j);
     }
+    // Note that it has no parameters e.g. "-v"
+    constexpr inline Mat<T, N, M> operator-() const noexcept {
+        Mat<T, N, M> result;
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) result(i, j) = -(*this)(i, j);
+        return result;
+    }
     template <unsigned int U>
     constexpr inline Mat<T, N, U> operator*(const Mat<T, M, U>& o) const {
         Mat<T, N, U> result;
@@ -398,6 +423,19 @@ class Mat : public std::array<Vec<T, N>, M> {
             for (int j = 0; j < M; ++j) (*this)(i, j) /= f;
     }
 
+    constexpr inline Mat<T, N, M> ewise_mult(const Mat<T, N, M>& o) const {
+        Mat<T, N, M> result;
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j) result(i, j) = (*this)(i, j) * o(i, j);
+        return result;
+    }
+    constexpr inline Mat<T, N, M> pow(const T& e) const {
+        Mat<T, N, M> result;
+        for (int i = 0; i < N; ++i)
+            for (int j = 0; j < M; ++j)
+                result(i, j) = std::pow((*this)(i, j), e);
+        return result;
+    }
     constexpr inline Mat<T, M, N> transpose() const {
         Mat<T, M, N> result;
         for (int i = 0; i < M; ++i)
@@ -419,6 +457,15 @@ class Mat : public std::array<Vec<T, N>, M> {
     constexpr inline T sum() const {
         T result;
         for (int i = 0; i < M; ++i) result += (*this)[i].sum();
+        return result;
+    }
+
+    template <typename MapFunc>
+    constexpr inline Mat<T, N, M> map(const MapFunc& f) const {
+        Mat<T, N, M> result;
+        for (unsigned int i = 0; i < N; ++i)
+            for (unsigned int j = 0; j < M; ++j)
+                result(i, j) = f((*this)(i, j), i, j);
         return result;
     }
 
