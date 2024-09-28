@@ -42,13 +42,17 @@ namespace test {
         detail::name##FromType<Args...>::value;
 
 // test conditions
-#define _TEST_FAIL                                         \
-    {                                                      \
-        _current_test_ok = false;                          \
-        std::cout << "failed on line " << __LINE__ << " "; \
+#define TEST_TRUE(...)                                                     \
+    if (!(__VA_ARGS__)) {                                                  \
+        _current_test_ok = false;                                          \
+        std::cout << "failed on line " << __LINE__ << " (false != true) "; \
     }
-#define TEST_TRUE(...) \
-    if (!(__VA_ARGS__)) _TEST_FAIL
+#define TEST_EQ(A, B)                                             \
+    if ((A) != (B)) {                                             \
+        _current_test_ok = false;                                 \
+        std::cout << "failed on line " << __LINE__ << " (" << (A) \
+                  << " != " << (B) << ") ";                       \
+    }
 
 // test functions
 using TestFunction = bool (*)();
@@ -59,7 +63,7 @@ struct TestFunctionData {
 std::vector<std::string> _test_order;
 std::unordered_map<std::string, std::vector<TestFunctionData>> _test_functions;
 #define COMMON_BASENAME(file) (file.substr(file.find_last_of('/') + 1))
-void test_register(std::string file, const std::string &function_name,
+void test_register(std::string file, const std::string& function_name,
                    TestFunction f) {
     file = COMMON_BASENAME(file);
     if (_test_functions.find(file) == std::end(_test_functions)) {
@@ -83,11 +87,11 @@ void test_register(std::string file, const std::string &function_name,
     } _register_test##name##_obj;
 
 void run_tests() {
-    for (const auto &file : _test_order) {
+    for (const auto& file : _test_order) {
         std::cout << file << std::endl;
-        const auto &functions = _test_functions[file];
+        const auto& functions = _test_functions[file];
         int num_ok = 0;
-        for (const auto &test : functions) {
+        for (const auto& test : functions) {
             std::cout << "    " << test.name << " ... ";
             bool test_ok = test.f();
             if (test_ok) {
