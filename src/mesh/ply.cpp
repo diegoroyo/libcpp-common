@@ -144,7 +144,7 @@ Mesh load_ply(std::ifstream& file) {
                                           format);
     }
 
-    Mesh mesh;
+    common::Mesh mesh;
     bool end_header = false;
     std::vector<std::tuple<size_t, std::vector<std::shared_ptr<Property>>>>
         all_properties;

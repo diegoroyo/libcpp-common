@@ -21,4 +21,6 @@ int main() {
 
     Mat3f test(Vec3f(0), Vec3f(1), Vec3f(2));
     std::cout << test << std::endl;
+    Mat3f test2(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    std::cout << test2 << std::endl;
 }

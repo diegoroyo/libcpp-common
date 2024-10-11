@@ -235,9 +235,9 @@ constexpr T dot(const Vec<T, N>& u, const Vec<T, N>& v) {
 template <typename T, unsigned int N,
           typename = std::enable_if_t<N == 3 || N == 4>>
 constexpr Vec<T, N> cross(const Vec<T, N>& u, const Vec<T, N>& v) {
-    return Vec<T, N>{u.y() * v.z() - u.z() * v.y(),
-                     u.z() * v.x() - u.x() * v.z(),
-                     u.x() * v.y() - u.y() * v.x()};
+    return Vec<T, N>(Vec<T, 3>{u.y() * v.z() - u.z() * v.y(),
+                               u.z() * v.x() - u.x() * v.z(),
+                               u.x() * v.y() - u.y() * v.x()});
 }
 
 using Vec2f = Vec<float, 2>;
@@ -261,6 +261,7 @@ class VecList : public std::vector<Vec<T, N>> {
 
    public:
     VecList() : Base() {}
+    VecList(const std::initializer_list<Vec<T, N>>& init) : Base{init} {}
     VecList(size_t count, const Vec<T, N>& value = Vec<T, N>())
         : Base(count, value) {}
 
@@ -296,6 +297,10 @@ class VecList : public std::vector<Vec<T, N>> {
     }
 };
 
+using VecList2f = VecList<float, 2>;
+using VecList2i = VecList<int, 2>;
+using VecList2u = VecList<unsigned int, 2>;
+
 using VecList3f = VecList<float, 3>;
 using VecList3i = VecList<int, 3>;
 using VecList3u = VecList<unsigned int, 3>;
@@ -327,13 +332,28 @@ class Mat : public std::array<Vec<T, N>, M> {
 
     // fill the mat with the same element (defaults to 0 initialization)
     constexpr Mat(T x = 0) : Base() { Base::fill(x); }
-    // M vecs constructor e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
-    template <typename... Vecs,
+    // N*M elements constructor e.g. Mat3f(1,2,3,4,5,6,7,8,9)
+    // and M vecs too e.g. Mat3f(Vec3f(1,2,3), Vec3f(4,5,6), Vec3f(7,8,9))
+    // (couldn't do this in two constructors as it seems to be ambiguous)
+    template <typename... Args,
               typename = std::enable_if_t<
-                  sizeof...(Vecs) == M &&
-                  (std::is_convertible_v<Vecs, Vec<T, N>> && ...)>>
-    constexpr Mat(Vecs&&... vecs)
-        : Base{static_cast<Vec<T, N>>(std::forward<Vecs>(vecs))...} {}
+                  (sizeof...(Args) == M || sizeof...(Args) == N * M) &&
+                  ((std::is_convertible_v<Args, T> && ...) ||
+                   (std::is_convertible_v<Args, Vec<T, N>> && ...))>>
+    constexpr Mat(Args&&... args) : Base() {
+        constexpr size_t num_args = sizeof...(Args);
+
+        if constexpr (num_args == M) {
+            Vec<T, N> arr[num_args] = {
+                static_cast<Vec<T, N>>(std::forward<Args>(args))...};
+            for (size_t i = 0; i < M; ++i) (*this)[i] = arr[i];
+        } else {
+            T arr[num_args] = {static_cast<T>(std::forward<Args>(args))...};
+
+            for (size_t i = 0; i < M; ++i)
+                for (size_t j = 0; j < N; ++j) (*this)(i, j) = arr[i * N + j];
+        }
+    }
 
     static constexpr Mat<T, N> identity() {
         Mat<T, N> result;
