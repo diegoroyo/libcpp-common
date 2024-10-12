@@ -229,7 +229,7 @@ static inline uint8_t apply_png_filter(const size_t x, const size_t y,
         case 4:  // paeth
             // https://datatracker.ietf.org/doc/html/rfc2083#section-6.6
             uint8_t a = left, b = top, c = topleft;
-            uint8_t p = a + b - c;
+            uint16_t p = a + b - c;
             uint8_t pa = abs(p - a);
             uint8_t pb = abs(p - b);
             uint8_t pc = abs(p - c);
