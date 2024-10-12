@@ -14,7 +14,7 @@ template <typename T>
 struct bitmap_channels;
 
 template <typename T>
-Grid2D<T> load_bitmap(const std::string& filename) {
+Grid2D<T> load_bitmap(const std::string& filename, const bool flip_y) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
     static_assert(channels > 0,
                   "Invalid bitmap type to load. It must be one of: float, "
@@ -26,8 +26,8 @@ Grid2D<T> load_bitmap(const std::string& filename) {
                                             std::string(filename));
 
     // Write here all the loaders
-    if (test_ppm<T>(file)) return load_ppm<T>(file);
-    if (test_png<T>(file)) return load_png<T>(file);
+    if (test_ppm<T>(file)) return load_ppm<T>(file, flip_y);
+    if (test_png<T>(file)) return load_png<T>(file, flip_y);
 
     throw detail::CommonBitmapException("No image loader found for file " +
                                         std::string(filename));

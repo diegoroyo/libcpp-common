@@ -359,9 +359,10 @@ void apply_idat(Grid2D<T>& image, const IHDR& ihdr, std::vector<uint8_t>& idat,
 inline bool is_uppercase(const char c) { return c >= 'A' && c <= 'Z'; }
 
 template <typename T>
-Grid2D<T> load_png(std::ifstream& file) {
+Grid2D<T> load_png(std::ifstream& file, const bool flip_y) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
     Grid2D<T> image;
+    image.set_flip_y(flip_y);
 
     // Skip magic number header
     file.seekg(8, std::ios::beg);

@@ -107,26 +107,29 @@ class Color : public Vec<T, N> {
 
 using Color1f = Color<float, 1>;
 using Color1u = Color<unsigned int, 1>;
+using Color1b = Color<unsigned char, 1>;
 using Color3f = Color<float, 3>;
 using Color3u = Color<unsigned int, 3>;
+using Color3b = Color<unsigned char, 3>;
 using Color4f = Color<float, 4>;
 using Color4u = Color<unsigned int, 4>;
+using Color4b = Color<unsigned char, 4>;
 
 /// GRID2D / BITMAP ///
 
 template <typename T>
-class Grid2D : protected std::vector<std::vector<T>> {
+class Grid2D : protected std::vector<T> {
    private:
-    using Base = std::vector<std::vector<T>>;
+    using Base = std::vector<T>;
     size_t m_width, m_height;
-    bool m_repeat;
+    bool m_repeat, m_flip_y;
 
-    constexpr inline std::vector<T>& operator[](const size_t i) {
+    constexpr inline T& operator[](const size_t i) {
         return Base::operator[](i);
     };
 
     // allows for numpy-like indexing (e.g. -1 is last pixel)
-    inline void idx(int& i, int& j) const {
+    inline unsigned int idx(int i, int j) const {
         if (!m_repeat && (i < 0 || j < 0 || i >= m_width || j >= m_height))
             throw detail::CommonBitmapException("Invalid index (" +
                                                 std::to_string(i) + ", " +
@@ -136,29 +139,36 @@ class Grid2D : protected std::vector<std::vector<T>> {
                      : (m_width - 1 + ((i + 1) % (int)m_width));
         j = (j >= 0) ? (j % m_height)
                      : (m_height - 1 + ((j + 1) % (int)m_height));
+        if (m_flip_y)
+            return (m_height - 1 - j) * m_width + i;
+        else
+            return j * m_width + i;
     }
 
    public:
     using Base::Base;
-    Grid2D(bool repeat = true)
-        : m_width(0), m_height(0), m_repeat(repeat), Base() {}
-    Grid2D(size_t width, size_t height, const T& value = 0, bool repeat = true)
-        : m_width(width), m_height(height), m_repeat(repeat), Base() {
+    Grid2D(bool repeat = true, bool flip_y = false)
+        : m_width(0), m_height(0), m_repeat(repeat), m_flip_y(flip_y), Base() {}
+    Grid2D(size_t width, size_t height, const T& value = 0, bool repeat = true,
+           bool flip_y = false)
+        : m_width(width),
+          m_height(height),
+          m_repeat(repeat),
+          m_flip_y(flip_y),
+          Base() {
         this->resize(width, height, value);
     }
     void set_repeat(bool repeat) { m_repeat = repeat; }
+    void set_flip_y(bool flip_y) { m_flip_y = flip_y; }
 
     void resize(size_t width, size_t height, const T& value = 0) {
         m_width = width;
         m_height = height;
-        Base::resize(height);
-        for (auto& row : *this) {
-            row.resize(width, value);
-        }
+        Base::resize(width * height);
     }
 
     void fill(const T& value) {
-        for (auto& row : *this) std::fill(row.begin(), row.end(), value);
+        std::fill(this->Base::begin(), this->Base::end(), value);
     }
 
     // This alternative does not use templated functions so that
@@ -202,15 +212,14 @@ class Grid2D : protected std::vector<std::vector<T>> {
 
     inline size_t width() const { return m_width; }
     inline size_t height() const { return m_height; }
+    inline const void* data() const { return &Base::operator[](0); }
     inline Vec2u size() const { return Vec2u(m_width, m_height); }
 
     constexpr inline T& operator()(int i, int j) {
-        idx(i, j);
-        return (*this).at(j).at(i);
+        return (*this).at(idx(i, j));
     }
     constexpr inline const T& operator()(int i, int j) const {
-        idx(i, j);
-        return (*this).at(j).at(i);
+        return (*this).at(idx(i, j));
     }
     constexpr inline T& operator()(const Vec2i& ij) {
         return (*this)(ij.x(), ij.y());
@@ -239,6 +248,10 @@ class Grid2D : protected std::vector<std::vector<T>> {
 using Bitmap1f = Grid2D<Color1f>;
 using Bitmap3f = Grid2D<Color3f>;
 using Bitmap4f = Grid2D<Color4f>;
+
+using Bitmap1b = Grid2D<Color1b>;
+using Bitmap3b = Grid2D<Color3b>;
+using Bitmap4b = Grid2D<Color4b>;
 
 using Bitmap1u = Grid2D<Color1u>;
 using Bitmap3u = Grid2D<Color3u>;
@@ -375,7 +388,7 @@ struct bitmap_channels<unsigned int> : std::integral_constant<uint8_t, 1> {};
 /// LOAD / SAVE ///
 
 template <typename T>
-Grid2D<T> load_bitmap(const std::string& filename);
+Grid2D<T> load_bitmap(const std::string& filename, const bool flip_y = false);
 
 template <typename T>
 void save_bitmap(const std::string& filename, const Grid2D<T>& image);

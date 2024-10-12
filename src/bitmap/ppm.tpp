@@ -31,13 +31,14 @@ bool test_ppm(std::ifstream& file) {
 }
 
 template <typename T>
-Grid2D<T> load_ppm(std::ifstream& file) {
+Grid2D<T> load_ppm(std::ifstream& file, const bool flip_y) {
     constexpr uint8_t channels = bitmap_channels<T>::value;
     if constexpr (channels != 3)
         throw detail::CommonBitmapException(
             "PPM load only supports three-channel Bitmap objects");
 
     Grid2D<T> image;
+    image.set_flip_y(flip_y);
 
     // Skip magic number header
     file.seekg(2, std::ios::beg);
