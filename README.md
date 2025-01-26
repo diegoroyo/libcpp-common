@@ -2,7 +2,8 @@
 
 A collection of C++ files I typically use in my projects
 
-* `geometry.h`: Implementation of `Vec`, `VecList`, and `Mat` types.
+* `geometry.h`: Implementation of `Vec`, `VecList`, and `Mat` types for 1D and 2D arrays, with many useful operations such as matrix-matrix and matrix-vector products.
+* `tensor.h`: Implementation of `Tensor` type, for N dimensional data.
 * `mesh.h`: 3D model loader. Currently supports:
   * PLY format (only the vertices and the faces).
 * `bitmap.h`: Image loader and saver with the `Color` (i.e. RGB), `Bitmap` (i.e. image) and `BitmapList` (i.e. video) types. Currently supports:
