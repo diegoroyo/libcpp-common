@@ -33,5 +33,10 @@ class CommonBitmapException : public CommonException {
     CommonBitmapException(const std::string& msg) : CommonException(msg) {}
 };
 
+class CommonTensorException : public CommonException {
+   public:
+    CommonTensorException(const std::string& msg) : CommonException(msg) {}
+};
+
 };  // namespace detail
 };  // namespace common
