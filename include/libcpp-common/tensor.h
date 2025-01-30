@@ -198,25 +198,25 @@ class Tensor {
 
     /* Arithmetic operators */
    public:
-#define DEFINE_ARITHMETIC_OPERATOR(op)                                        \
-    constexpr inline Tensor<T, Shape...> operator op(const T& scalar) const { \
-        auto result = Tensor<T, Shape...>::zeros();                           \
-        for (size_t i = 0; i < size; ++i)                                     \
-            result.at(i) = (*this).at(i) op scalar;                           \
-        return result;                                                        \
-    }                                                                         \
-    constexpr inline Tensor<T, Shape...> operator op(                         \
-        const Tensor<T, Shape...>& other) const {                             \
-        auto result = Tensor<T, Shape...>::zeros();                           \
-        for (size_t i = 0; i < size; ++i)                                     \
-            result.at(i) = (*this).at(i) op other.at(i);                      \
-        return result;                                                        \
-    }                                                                         \
-    constexpr inline void operator op##=(const T& scalar) {                   \
-        for (size_t i = 0; i < size; ++i) at(i) op## = scalar;                \
-    }                                                                         \
-    constexpr inline void operator op##=(const Tensor<T, Shape...>& other) {  \
-        for (size_t i = 0; i < size; ++i) at(i) op## = other.at(i);           \
+#define DEFINE_ARITHMETIC_OPERATOR(op)                                         \
+    constexpr inline Tensor<T, Shape...> operator op(const T & scalar) const { \
+        auto result = Tensor<T, Shape...>::zeros();                            \
+        for (size_t i = 0; i < size; ++i)                                      \
+            result.at(i) = (*this).at(i) op scalar;                            \
+        return result;                                                         \
+    }                                                                          \
+    constexpr inline Tensor<T, Shape...> operator op(                          \
+        const Tensor<T, Shape...>& other) const {                              \
+        auto result = Tensor<T, Shape...>::zeros();                            \
+        for (size_t i = 0; i < size; ++i)                                      \
+            result.at(i) = (*this).at(i) op other.at(i);                       \
+        return result;                                                         \
+    }                                                                          \
+    constexpr inline void operator op##=(const T& scalar) {                    \
+        for (size_t i = 0; i < size; ++i) at(i) op## = scalar;                 \
+    }                                                                          \
+    constexpr inline void operator op##=(const Tensor<T, Shape...>& other) {   \
+        for (size_t i = 0; i < size; ++i) at(i) op## = other.at(i);            \
     }
 
     DEFINE_ARITHMETIC_OPERATOR(+)
@@ -253,6 +253,19 @@ class Tensor {
         auto result = Tensor<T, M, N>::zeros();
         for (size_t i = 0; i < N; ++i)
             for (size_t j = 0; j < M; ++j) result(j, i) = (*this)(i, j);
+        return result;
+    }
+
+    // Matrix-matrix multiplication
+    template <size_t U,  //
+              size_t N = get_dim<0>(), size_t M = get_dim<1>()>
+    constexpr inline std::enable_if_t<ndim == 2, Tensor<T, N, U>> operator*(
+        const Tensor<T, M, U>& mat) const {
+        auto result = Tensor<T, N, U>::zeros();
+        for (size_t i = 0; i < N; ++i)
+            for (size_t j = 0; j < U; ++j)
+                for (size_t k = 0; k < M; ++k)
+                    result(i, j) += (*this)(i, k) * mat(k, j);
         return result;
     }
 
