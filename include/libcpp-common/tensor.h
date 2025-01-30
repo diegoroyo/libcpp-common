@@ -12,7 +12,9 @@
 #include <type_traits>
 #include <utility>
 
+#include "libcpp-common/bitmap.h"
 #include "libcpp-common/detail/exception.h"
+#include "libcpp-common/geometry.h"
 
 namespace common {
 
@@ -198,30 +200,30 @@ class Tensor {
 
     /* Arithmetic operators */
    public:
-#define DEFINE_ARITHMETIC_OPERATOR(op)                                         \
-    constexpr inline Tensor<T, Shape...> operator op(const T & scalar) const { \
-        auto result = Tensor<T, Shape...>::zeros();                            \
-        for (size_t i = 0; i < size; ++i)                                      \
-            result.at(i) = (*this).at(i) op scalar;                            \
-        return result;                                                         \
-    }                                                                          \
-    constexpr inline Tensor<T, Shape...> operator op(                          \
-        const Tensor<T, Shape...>& other) const {                              \
-        auto result = Tensor<T, Shape...>::zeros();                            \
-        for (size_t i = 0; i < size; ++i)                                      \
-            result.at(i) = (*this).at(i) op other.at(i);                       \
-        return result;                                                         \
-    }                                                                          \
-    constexpr inline void operator op##=(const T& scalar) {                    \
-        for (size_t i = 0; i < size; ++i) at(i) op## = scalar;                 \
-    }                                                                          \
-    constexpr inline void operator op##=(const Tensor<T, Shape...>& other) {   \
-        for (size_t i = 0; i < size; ++i) at(i) op## = other.at(i);            \
+#define DEFINE_ARITHMETIC_OPERATOR(op)                                        \
+    constexpr inline Tensor<T, Shape...> operator op(const T& scalar) const { \
+        auto result = Tensor<T, Shape...>::zeros();                           \
+        for (size_t i = 0; i < size; ++i)                                     \
+            result.at(i) = (*this).at(i) op scalar;                           \
+        return result;                                                        \
+    }                                                                         \
+    constexpr inline Tensor<T, Shape...> operator op(                         \
+        const Tensor<T, Shape...>& other) const {                             \
+        auto result = Tensor<T, Shape...>::zeros();                           \
+        for (size_t i = 0; i < size; ++i)                                     \
+            result.at(i) = (*this).at(i) op other.at(i);                      \
+        return result;                                                        \
+    }                                                                         \
+    constexpr inline void operator op##=(const T& scalar) {                   \
+        for (size_t i = 0; i < size; ++i) at(i) op## = scalar;                \
+    }                                                                         \
+    constexpr inline void operator op##=(const Tensor<T, Shape...>& other) {  \
+        for (size_t i = 0; i < size; ++i) at(i) op## = other.at(i);           \
     }
 
     DEFINE_ARITHMETIC_OPERATOR(+)
     DEFINE_ARITHMETIC_OPERATOR(-)
-    // DEFINE_ARITHMETIC_OPERATOR(*)
+    // DEFINE_ARITHMETIC_OPERATOR(*)  // defined below
     DEFINE_ARITHMETIC_OPERATOR(/)
 
     constexpr inline Tensor<T, Shape...> operator-() const {
@@ -245,7 +247,7 @@ class Tensor {
         return result;
     }
 
-    /* Matrix-specific stuff */
+    /* Matrix/vector-specific stuff */
     // Transpose
     template <size_t N = get_dim<0>(), size_t M = get_dim<1>()>
     constexpr inline std::enable_if_t<ndim == 2, Tensor<T, M, N>> transpose()
@@ -253,6 +255,15 @@ class Tensor {
         auto result = Tensor<T, M, N>::zeros();
         for (size_t i = 0; i < N; ++i)
             for (size_t j = 0; j < M; ++j) result(j, i) = (*this)(i, j);
+        return result;
+    }
+
+    // Vector-vector multiplication
+    template <size_t N = get_dim<0>()>
+    constexpr inline std::enable_if_t<ndim == 1, Tensor<T, N>> operator*(
+        const Tensor<T, N>& vec) const {
+        auto result = Tensor<T, N>::zeros();
+        for (size_t i = 0; i < size; ++i) result(i) += (*this)(i)*vec(i);
         return result;
     }
 
@@ -292,6 +303,21 @@ class Tensor {
     constexpr inline T sum() const {
         T result = 0;
         for (size_t i = 0; i < size; ++i) result += (*this).at(i);
+        return result;
+    }
+
+    /* Conversion to other types */
+   public:
+    template <size_t N = get_dim<0>()>
+    operator std::enable_if_t<ndim == 1, common::Vec<T, N>>() const {
+        common::Vec<T, N> result;
+        std::copy(std::begin(m_data), std::end(m_data), result.begin());
+        return result;
+    }
+    template <size_t N = get_dim<0>()>
+    operator std::enable_if_t<ndim == 1, common::Color<T, N>>() const {
+        common::Color<T, N> result;
+        std::copy(std::begin(m_data), std::end(m_data), result.begin());
         return result;
     }
 };
