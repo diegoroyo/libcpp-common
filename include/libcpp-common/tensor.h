@@ -10,18 +10,13 @@
 #include <iostream>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "libcpp-common/detail/exception.h"
 
 namespace common {
 
 namespace detail {
-
-template <size_t I, size_t... Shape>
-constexpr size_t get_dimension() {
-    // static_assert(I < sizeof...(Shape), "Dimension index out of bounds");
-    return std::array<size_t, sizeof...(Shape)>{Shape...}[I];
-}
 
 template <typename T, size_t N>
 struct NestedInitializerList {
@@ -43,6 +38,11 @@ class Tensor {
     static constexpr size_t ndim = sizeof...(Shape);
     static constexpr size_t size = (Shape * ...);
     static constexpr std::array<size_t, ndim> shape = {Shape...};
+
+    template <size_t I>
+    static constexpr size_t get_dim() {
+        return std::array<size_t, sizeof...(Shape)>{Shape...}[I];
+    }
 
    private:
     static constexpr std::array<size_t, ndim> compute_strides() {
@@ -126,7 +126,7 @@ class Tensor {
             for (const T& val : list) {
                 if (index >= size)
                     throw detail::CommonTensorException("Too many elements");
-                m_data[index++] = val;
+                (*this).at(index++) = val;
             }
         }
     }
@@ -137,18 +137,15 @@ class Tensor {
 
     template <unsigned int N,
               typename = std::enable_if_t<
-                  ndim == 1 && detail::get_dimension<0, Shape...>() ==
-                                   static_cast<size_t>(N)>>
+                  ndim == 1 && get_dim<0>() == static_cast<size_t>(N)>>
     Tensor(const common::Vec<T, N>& vec) : m_data() {
         std::copy(vec.begin(), vec.end(), std::begin(m_data));
     }
 
-    template <
-        unsigned int N, unsigned int M,
-        typename = std::enable_if_t<
-            (ndim == 2) &&
-            detail::get_dimension<0, Shape...>() == static_cast<size_t>(N) &&
-            detail::get_dimension<1, Shape...>() == static_cast<size_t>(M)>>
+    template <unsigned int N, unsigned int M,
+              typename = std::enable_if_t<
+                  ndim == 2 && (get_dim<0>() == static_cast<size_t>(N) &&
+                                get_dim<1>() == static_cast<size_t>(M))>>
     Tensor(const common::Mat<T, N, M>& mat) : m_data() {
         std::copy(mat.front().begin(), mat.back().end(), std::begin(m_data));
     }
@@ -156,8 +153,6 @@ class Tensor {
     Tensor(const std::array<T, size>& data) : m_data() {
         std::copy(data.begin(), data.end(), std::begin(m_data));
     }
-
-    Tensor(const T* data) { std::memcpy(m_data, data, size * sizeof(T)); }
 
     /* Access operators */
    public:
@@ -167,7 +162,7 @@ class Tensor {
                   (std::is_convertible_v<size_t, Indices> && ...)>>
     T& operator()(Indices... indices) {
         auto indices_arr = std::array{static_cast<size_t>(indices)...};
-        return m_data[compute_1d_index(indices_arr)];
+        return (*this).at(compute_1d_index(indices_arr));
     }
 
     template <typename... Indices,
@@ -176,8 +171,11 @@ class Tensor {
                   (std::is_convertible_v<size_t, Indices> && ...)>>
     const T& operator()(Indices... indices) const {
         auto indices_arr = std::array{static_cast<size_t>(indices)...};
-        return m_data[compute_1d_index(indices_arr)];
+        return (*this).at(compute_1d_index(indices_arr));
     }
+
+    T& at(size_t i) { return m_data[i]; }
+    const T& at(size_t i) const { return m_data[i]; }
 
     /* Pretty print */
    public:
@@ -185,7 +183,7 @@ class Tensor {
                                     const Tensor<T, Shape...>& t) {
         for (size_t i = 0; i < ndim; ++i) s << "[ ";
         for (size_t i = 0; i < size; ++i) {
-            s << t.m_data[i] << " ";
+            s << t.at(i) << " ";
             if (i == size - 1) continue;
             for (size_t j = 0; j < ndim - 1; ++j) {
                 if ((i + 1) % strides[j] == 0) {
@@ -201,51 +199,86 @@ class Tensor {
     /* Arithmetic operators */
    public:
 #define DEFINE_ARITHMETIC_OPERATOR(op)                                        \
-    Tensor<T, Shape...> operator op(const T& scalar) const {                  \
-        Tensor<T, Shape...> result;                                           \
-        for (size_t i = 0; i < size; ++i) {                                   \
-            result.m_data[i] = m_data[i] op scalar;                           \
-        }                                                                     \
+    constexpr inline Tensor<T, Shape...> operator op(const T& scalar) const { \
+        auto result = Tensor<T, Shape...>::zeros();                           \
+        for (size_t i = 0; i < size; ++i)                                     \
+            result.at(i) = (*this).at(i) op scalar;                           \
         return result;                                                        \
     }                                                                         \
-    Tensor<T, Shape...> operator op(const Tensor<T, Shape...>& other) const { \
-        Tensor<T, Shape...> result;                                           \
-        for (size_t i = 0; i < size; ++i) {                                   \
-            result.m_data[i] = m_data[i] op other.m_data[i];                  \
-        }                                                                     \
+    constexpr inline Tensor<T, Shape...> operator op(                         \
+        const Tensor<T, Shape...>& other) const {                             \
+        auto result = Tensor<T, Shape...>::zeros();                           \
+        for (size_t i = 0; i < size; ++i)                                     \
+            result.at(i) = (*this).at(i) op other.at(i);                      \
         return result;                                                        \
     }                                                                         \
-    void operator op##=(const T& scalar) {                                    \
-        for (size_t i = 0; i < size; ++i) {                                   \
-            m_data[i] op## = scalar;                                          \
-        }                                                                     \
+    constexpr inline void operator op##=(const T& scalar) {                   \
+        for (size_t i = 0; i < size; ++i) at(i) op## = scalar;                \
     }                                                                         \
-    void operator op##=(const Tensor<T, Shape...>& other) {                   \
-        for (size_t i = 0; i < size; ++i) {                                   \
-            m_data[i] op## = other.m_data[i];                                 \
-        }                                                                     \
+    constexpr inline void operator op##=(const Tensor<T, Shape...>& other) {  \
+        for (size_t i = 0; i < size; ++i) at(i) op## = other.at(i);           \
     }
 
     DEFINE_ARITHMETIC_OPERATOR(+)
     DEFINE_ARITHMETIC_OPERATOR(-)
-    DEFINE_ARITHMETIC_OPERATOR(*)
+    // DEFINE_ARITHMETIC_OPERATOR(*)
     DEFINE_ARITHMETIC_OPERATOR(/)
 
-    Tensor<T, Shape...> operator-() const {
-        Tensor<T, Shape...> result;
-        for (size_t i = 0; i < size; ++i) {
-            result.m_data[i] = -m_data[i];
-        }
+    constexpr inline Tensor<T, Shape...> operator-() const {
+        auto result = Tensor<T, Shape...>::zeros();
+        for (size_t i = 0; i < size; ++i) result.at(i) = -at(i);
+        return result;
+    }
+    constexpr inline Tensor<T, Shape...> operator*(const T& scalar) const {
+        auto result = Tensor<T, Shape...>::zeros();
+        for (size_t i = 0; i < size; ++i) result.at(i) = (*this).at(i) * scalar;
+        return result;
+    }
+    constexpr inline void operator*=(const T& scalar) {
+        for (size_t i = 0; i < size; ++i) (*this).at(i) *= scalar;
+    }
+    constexpr inline Tensor<T, Shape...> ewise_mult(
+        const Tensor<T, Shape...>& other) const {
+        auto result = Tensor<T, Shape...>::zeros();
+        for (size_t i = 0; i < size; ++i)
+            result.at(i) = (*this).at(i) * other.at(i);
         return result;
     }
 
-    /* Reduce operations */
+    /* Matrix-specific stuff */
+    // Transpose
+    template <size_t N = get_dim<0>(), size_t M = get_dim<1>()>
+    constexpr inline std::enable_if_t<ndim == 2, Tensor<T, M, N>> transpose()
+        const {
+        auto result = Tensor<T, M, N>::zeros();
+        for (size_t i = 0; i < N; ++i)
+            for (size_t j = 0; j < M; ++j) result(j, i) = (*this)(i, j);
+        return result;
+    }
+
+    // Matrix-vector multiplication
+    template <size_t N = get_dim<0>(), size_t M = get_dim<1>()>
+    constexpr inline std::enable_if_t<ndim == 2, Tensor<T, N>> operator*(
+        const Tensor<T, M>& vec) const {
+        auto result = Tensor<T, N>::zeros();
+        for (size_t i = 0; i < N; ++i)
+            for (size_t j = 0; j < M; ++j) result(i) += (*this)(i, j) * vec(j);
+        return result;
+    }
+
+    /* Map/Reduce operations */
    public:
-    T sum() const {
+    template <typename MapFunc>
+    constexpr inline Tensor<T, Shape...> map(const MapFunc& f) const {
+        auto result = Tensor<T, Shape...>::zeros();
+        for (unsigned int i = 0; i < size; ++i)
+            result.at(i) = f((*this).at(i), i);
+        return result;
+    }
+
+    constexpr inline T sum() const {
         T result = 0;
-        for (size_t i = 0; i < size; ++i) {
-            result += m_data[i];
-        }
+        for (size_t i = 0; i < size; ++i) result += (*this).at(i);
         return result;
     }
 };
